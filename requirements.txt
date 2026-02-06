@@ -22,3 +22,7 @@ python-dotenv
 hydra-core
 optuna
 pytest
+catboost
+lightgbm
+joblib
+scipy

@@ -1,6 +1,6 @@
 # Google Earth Engine Authentication Guide
 
-Since you are running the application locally, you need to authenticate with Google Earth Engine (GEE) to allow the Python script to fetch satellite data.
+Since for running the application locally, you need to authenticate with Google Earth Engine (GEE) to allow the Python script to fetch satellite data.
 
 ## Prerequisites
 1.  **Google Cloud Project**: You need a Google Cloud Project with the **Earth Engine API** enabled.

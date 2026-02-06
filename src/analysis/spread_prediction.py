@@ -3,6 +3,12 @@ import numpy as np
 import logging
 from typing import Dict, Any, List
 import os
+import sys
+from pathlib import Path
+
+# Add project root to path for config import
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+import config
 
 # Import the model builder
 from ..models.unet_fire import build_unet_model
@@ -14,7 +20,9 @@ class SpreadPredictor:
     Predictor for next-day wildfire spread using U-Net (PyTorch).
     """
     
-    def __init__(self, model_path: str = "data/models/unet_fire_spread.pth"):
+    def __init__(self, model_path: str = None):
+        if model_path is None:
+            model_path = str(config.UNET_MODEL)
         self.model_path = model_path
         self.model = None
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
