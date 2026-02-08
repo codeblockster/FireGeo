@@ -1,14 +1,35 @@
+import sys
+from pathlib import Path
+
+# Add project root to sys.path for direct imports
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.append(str(ROOT_DIR))
+
 import streamlit as st
 import folium
 from streamlit_folium import st_folium
-import requests
 import pandas as pd
 from datetime import datetime
 from folium.plugins import HeatMap
 
+# Direct imports from src instead of API calls
+from src.data_collection.gee_extractor import get_gee_extractor
+from src.data_collection.nasa_firms import get_nasa_firms_api
+from src.analysis.pre_fire import PreFireAnalyzer
+
 st.set_page_config(page_title="Wildfire Management System", layout="wide", page_icon="🔥")
 
-API_URL = "http://localhost:8000"
+# Initialize backend components
+@st.cache_resource
+def get_backend_components():
+    return {
+        "gee": get_gee_extractor(),
+        "firms": get_nasa_firms_api(),
+        "pre_fire": PreFireAnalyzer()
+    }
+
+backend = get_backend_components()
 
 # Custom CSS
 st.markdown("""
@@ -74,37 +95,30 @@ with tab1:
                 try:
                     region_code, center, zoom = region_map[region]
                     
-                    # Call NASA FIRMS API
+                    # Call NASA FIRMS API directly
+                    firms = backend["firms"]
                     if region_code:
-                        response = requests.get(
-                            f"{API_URL}/predictions/fires/active",
-                            params={"region": region_code, "hours": hours}
-                        )
+                        fires = firms.get_active_fires(region=region_code, hours=hours)
                     else:
                         # Use bbox for non-country regions
                         lat, lon = center
-                        response = requests.get(
-                            f"{API_URL}/predictions/fires/active",
-                            params={
-                                "min_lon": lon - 5,
-                                "min_lat": lat - 5,
-                                "max_lon": lon + 5,
-                                "max_lat": lat + 5,
-                                "hours": hours
-                            }
-                        )
+                        bbox = (lon - 5, lat - 5, lon + 5, lat + 5)
+                        fires = firms.get_active_fires(bbox=bbox, hours=hours)
                     
-                    if response.status_code == 200:
-                        data = response.json()
-                        st.session_state.fires_data = data
-                        st.success(f"✅ Found {data['count']} active fires")
-                        
-                        if data['count'] > 0:
-                            df = pd.DataFrame(data['fires'])
-                            st.dataframe(df[['latitude', 'longitude', 'brightness', 'confidence', 'acq_date']], 
-                                       use_container_width=True)
-                    else:
-                        st.error("❌ Failed to fetch fire data")
+                    data = {
+                        "count": len(fires),
+                        "fires": fires,
+                        "source": "NASA FIRMS",
+                        "hours": hours
+                    }
+                    
+                    st.session_state.fires_data = data
+                    st.success(f"✅ Found {data['count']} active fires")
+                    
+                    if data['count'] > 0:
+                        df = pd.DataFrame(data['fires'])
+                        st.dataframe(df[['latitude', 'longitude', 'brightness', 'confidence', 'acq_date']], 
+                                   use_container_width=True)
                 except Exception as e:
                     st.error(f"❌ Error: {e}")
         
@@ -189,16 +203,19 @@ with tab2:
             # Auto-fetch environmental data
             with st.spinner("Fetching environmental data..."):
                 try:
-                    response = requests.get(
-                        f"{API_URL}/predictions/environmental",
-                        params={
-                            "lat": clicked_lat,
-                            "lon": clicked_lon,
-                            "date": datetime.now().strftime('%Y-%m-%d')
-                        }
+                    # Call GEE directly
+                    gee = backend["gee"]
+                    features = gee.get_environmental_data(
+                        clicked_lat, 
+                        clicked_lon, 
+                        datetime.now().strftime('%Y-%m-%d')
                     )
-                    if response.status_code == 200:
-                        st.session_state.env_data = response.json()
+                    st.session_state.env_data = {
+                        "latitude": clicked_lat,
+                        "longitude": clicked_lon,
+                        "date": datetime.now().strftime('%Y-%m-%d'),
+                        "features": features
+                    }
                 except Exception as e:
                     st.error(f"Error fetching data: {e}")
     
@@ -241,27 +258,25 @@ with tab2:
                 if st.button("⚠️ Assess Fire Risk", type="primary"):
                     with st.spinner("Analyzing risk..."):
                         try:
-                            response = requests.post(
-                                f"{API_URL}/predictions/predict",
-                                json={
-                                    "latitude": lat,
-                                    "longitude": lon,
-                                    "date": datetime.now().strftime('%Y-%m-%d'),
-                                    "fire_detected": False
-                                }
-                            )
+                            # Use PreFireAnalyzer directly
+                            pre_fire = backend["pre_fire"]
+                            # Predict risk using the ensemble model
+                            risk_score = pre_fire.model.predict_risk(st.session_state.env_data['features'])
                             
-                            if response.status_code == 200:
-                                result = response.json()
-                                risk_level = result['risk']
-                                risk_score = result['risk_score']
-                                
-                                if risk_level == 'high':
-                                    st.error(f"🔴 **RISK LEVEL: HIGH** (Score: {risk_score})")
-                                elif risk_level == 'medium':
-                                    st.warning(f"🟡 **RISK LEVEL: MEDIUM** (Score: {risk_score})")
-                                else:
-                                    st.success(f"🟢 **RISK LEVEL: LOW** (Score: {risk_score})")
+                            # Determine risk level
+                            if risk_score > 0.7:
+                                risk_level = "high"
+                            elif risk_score > 0.4:
+                                risk_level = "medium"
+                            else:
+                                risk_level = "low"
+                            
+                            if risk_level == 'high':
+                                st.error(f"🔴 **RISK LEVEL: HIGH** (Score: {risk_score:.2f})")
+                            elif risk_level == 'medium':
+                                st.warning(f"🟡 **RISK LEVEL: MEDIUM** (Score: {risk_score:.2f})")
+                            else:
+                                st.success(f"🟢 **RISK LEVEL: LOW** (Score: {risk_score:.2f})")
                         except Exception as e:
                             st.error(f"Error: {e}")
         else:
@@ -367,14 +382,11 @@ with tab3:
             if st.button("📡 Fetch Weather Data", type="secondary"):
                 with st.spinner("Fetching..."):
                     try:
-                        response = requests.get(
-                            f"{API_URL}/predictions/environmental",
-                            params={"lat": lat, "lon": lon}
-                        )
-                        if response.status_code == 200:
-                            data = response.json()['features']
-                            st.session_state.fire_env_data = data
-                            st.success("✅ Data loaded")
+                        # Call GEE directly
+                        gee = backend["gee"]
+                        data = gee.get_environmental_data(lat, lon)
+                        st.session_state.fire_env_data = data
+                        st.success("✅ Data loaded")
                     except Exception as e:
                         st.error(f"Error: {e}")
             
@@ -404,4 +416,4 @@ with tab3:
 
 # Footer
 st.markdown("---")
-st.markdown("**System Status**: 🟢 Online | **Backend**: http://localhost:8000 | **Data**: NASA FIRMS, GEE (11 features)")
+st.markdown("**System Status**: 🟢 Online | **Mode**: Integrated (Direct) | **Data**: NASA FIRMS, GEE (11 features)")

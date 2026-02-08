@@ -8,8 +8,6 @@ numpy
 geopandas
 rasterio
 xarray
-fastapi
-uvicorn
 streamlit
 streamlit-folium
 requests
