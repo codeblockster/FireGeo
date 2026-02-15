@@ -1,10 +1,11 @@
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
@@ -18,12 +19,10 @@ COPY . .
 EXPOSE 8000
 EXPOSE 8501
 
-# Script to run both services
+# Script to run streamlit service
 RUN echo "#!/bin/bash\n\
-uvicorn api.backend.main:app --host 0.0.0.0 --port 8000 & \n\
-streamlit run frontend/app.py --server.port 8501 --server.address 0.0.0.0\n\
-wait -n\n\
-exit $?" > /app/start.sh
+    streamlit run frontend/app.py --server.port 8501 --server.address 0.0.0.0\n\
+    " > /app/start.sh
 
 RUN chmod +x /app/start.sh
 

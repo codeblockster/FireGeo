@@ -1,0 +1,36 @@
+{
+  "validation": {
+    "ROC_AUC": 0.9698508140470434,
+    "PR_AUC": 0.2735565101200175,
+    "Recall_Fire": 0.9262472885032538,
+    "Precision_Fire": 0.09196640103381434,
+    "F1_Score": 0.16731974921630094,
+    "False_Alarm_Rate": 0.07379660423595309,
+    "Specificity": 0.9262033957640469
+  },
+  "test_default_threshold": {
+    "ROC_AUC": 0.9629849526146819,
+    "PR_AUC": 0.24153389121810742,
+    "Recall_Fire": 0.9245723172628305,
+    "Precision_Fire": 0.08706158014205169,
+    "F1_Score": 0.15913805795355684,
+    "False_Alarm_Rate": 0.10908995458960023,
+    "Specificity": 0.8909100454103998
+  },
+  "test_optimal_threshold": {
+    "ROC_AUC": 0.9629849526146819,
+    "PR_AUC": 0.24153389121810742,
+    "Recall_Fire": 0.8888024883359253,
+    "Precision_Fire": 0.10575499629903774,
+    "F1_Score": 0.1890193484372416,
+    "False_Alarm_Rate": 0.08456483887620198,
+    "Specificity": 0.915435161123798
+  },
+  "training_time_seconds": 18.1922287940979,
+  "search_time_minutes": 71.86747534672419,
+  "best_cv_score": NaN,
+  "n_iterations": 50,
+  "cv_folds": 3,
+  "smote_ratio": 0.3,
+  "methodology": "S-tier: SMOTE inside CV, policy-aware scoring, threshold optimization"
+}

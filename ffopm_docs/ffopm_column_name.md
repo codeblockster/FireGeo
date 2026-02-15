@@ -1,0 +1,18 @@
+srtm : 
+zone,district,elevation_mean_m,elevation_min_m,elevation_max_m,elevation_median_m,elevation_stddev_m,elevation_range_m,elevation_p10_m,elevation_p25_m,elevation_p75_m,elevation_p90_m,mtpi_mean,mtpi_min,mtpi_max,mtpi_stddev,slope_mean_deg,slope_min_deg,slope_max_deg,slope_stddev_deg,aspect_mean_deg,aspect_stddev_deg
+
+era 5 : 
+date,zone,district,temperature_2m_celsius,dewpoint_2m_celsius,skin_temperature_celsius,soil_temperature_celsius,soil_moisture_m3m3,precipitation_mm,u_wind_component_ms,v_wind_component_ms,wind_speed_ms,wind_direction_deg,surface_pressure_hpa,relative_humidity_pct,vapor_pressure_deficit_kpa
+
+
+landsat :
+date,zone,district,satellite,cloud_cover,B2_Blue,B3_Green,B4_Red,B5_NIR,B6_SWIR1,B7_SWIR2,NDVI,GNDVI,NBR,NDWI,NDSI,EVI,SAVI
+
+mod14a1:
+date,zone,district,low_confidence_fire_pixels,nominal_confidence_fire_pixels,high_confidence_fire_pixels,total_fire_pixels,total_pixels,fire_percentage
+
+modis : 
+zone,satellite,LST_Day_C_mean,LST_Day_C_min,LST_Day_C_max,LST_Day_C_std,LST_Day_C_count,LST_Night_C_mean,LST_Night_C_min,LST_Night_C_max,LST_Night_C_std,LST_Night_C_count,Clear_Day_Coverage_mean,Clear_Night_Coverage_mean
+
+sentinel : 
+date,zone,district,B2_blue_mean,B3_green_mean,B4_red_mean,B8_nir_mean,B11_swir1_mean,B12_swir2_mean,NDVI,GNDVI,NBR,NDWI,NDSI,EVI,SAVI,cloud_cover_percent

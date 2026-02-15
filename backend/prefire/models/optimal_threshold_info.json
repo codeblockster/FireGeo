@@ -1,0 +1,7 @@
+{
+  "optimal_threshold": 0.6568943961295617,
+  "target_false_alarm_rate": 0.05,
+  "achieved_false_alarm_rate": 0.04972868895501488,
+  "achieved_recall": 0.8698481561822126,
+  "rationale": "Threshold optimized to achieve target FAR while maximizing recall"
+}

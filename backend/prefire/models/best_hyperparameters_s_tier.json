@@ -1,0 +1,12 @@
+{
+  "bagging_temperature": 0.3745401188473625,
+  "colsample_bylevel": 0.9802857225639665,
+  "depth": 6,
+  "iterations": 171,
+  "l2_leaf_reg": 6.986584841970366,
+  "learning_rate": 0.033402796066365474,
+  "max_bin": 512,
+  "min_data_in_leaf": 23,
+  "random_strength": 0.11616722433639892,
+  "subsample": 0.9464704583099741
+}
