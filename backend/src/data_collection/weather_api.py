@@ -134,9 +134,9 @@ class WeatherDataFetcher:
                 - wind_v: List of daily mean v wind component (m/s)
                 - dates: List of date strings
         """
-        # Archive API has a delay of 2-5 days. Use 5 days ago as end date.
-        end_date = (datetime.now() - timedelta(days=5)).strftime('%Y-%m-%d')
-        start_date = (datetime.now() - timedelta(days=days_back + 5)).strftime('%Y-%m-%d')
+        # Archive API has a delay of 2-5 days. Use 7 days ago as end date to be safe.
+        end_date = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+        start_date = (datetime.now() - timedelta(days=days_back + 7)).strftime('%Y-%m-%d')
         
         params = {
             'latitude': lat,

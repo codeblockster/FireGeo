@@ -1,8 +1,4 @@
-"""
-Wildfire Management System - Premium Material 3 Expressive UI
-Professional Edition with Real-Time API Integration
-Designed for Pixel-class experience with scientific precision
-"""
+
 
 import sys
 from pathlib import Path
@@ -27,7 +23,7 @@ from backend.firedetect import FireDetector
 from backend.prefire import PreFireAnalyzer
 
 st.set_page_config(
-    page_title="Wildfire Intelligence - Professional Edition",
+    page_title="Wildfire Management System",
     layout="wide",
     page_icon=" ",
     initial_sidebar_state="expanded"
@@ -57,6 +53,8 @@ backend = get_backend_components()
 # Exit if backend initialization failed
 if backend is None:
     st.stop()
+
+
 
 # MATERIAL 3 EXPRESSIVE DESIGN SYSTEM
 
@@ -226,31 +224,51 @@ st.markdown(f"""
     
     /* ===== EXPRESSIVE METRICS ===== */
     .metric-card {{
-        background: linear-gradient(135deg, {COLORS['primary_container']} 0%, {COLORS['surface_container_high']} 100%) !important;
+        background: linear-gradient(135deg, rgba(255, 242, 235, 0.95) 0%, rgba(255, 255, 255, 0.95) 100%) !important;
         border-radius: 20px !important;
-        padding: 1.25rem 1.5rem !important;
-        border-left: 4px solid {COLORS['primary']} !important;
-        box-shadow: 0 2px 8px rgba(255, 107, 53, 0.15) !important;
+        padding: 1.5rem 1.75rem !important;
+        border-left: 5px solid {COLORS['primary']} !important;
+        box-shadow: 
+            0 1px 3px rgba(0, 0, 0, 0.06),
+            0 4px 12px rgba(255, 107, 53, 0.12) !important;
         transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        position: relative !important;
+        overflow: hidden !important;
+    }}
+    
+    .metric-card::before {{
+        content: '' !important;
+        position: absolute !important;
+        top: 0 !important;
+        right: 0 !important;
+        width: 100px !important;
+        height: 100px !important;
+        background: radial-gradient(circle, rgba(255, 107, 53, 0.05) 0%, transparent 70%) !important;
+        pointer-events: none !important;
     }}
     
     .metric-card:hover {{
-        transform: scale(1.02) !important;
-        box-shadow: 0 4px 12px rgba(255, 107, 53, 0.25) !important;
+        transform: translateY(-3px) scale(1.02) !important;
+        box-shadow: 
+            0 2px 6px rgba(0, 0, 0, 0.08),
+            0 8px 20px rgba(255, 107, 53, 0.2) !important;
+        border-left-width: 6px !important;
     }}
     
     .metric-value {{
         font-family: 'Google Sans Display', sans-serif !important;
-        font-size: 2.5rem !important;
-        font-weight: 700 !important;
+        font-size: 2.75rem !important;
+        font-weight: 800 !important;
         color: {COLORS['primary']} !important;
         line-height: 1 !important;
-        margin-bottom: 0.25rem !important;
+        margin-bottom: 0.5rem !important;
+        position: relative !important;
+        z-index: 1 !important;
     }}
     
     .metric-label {{
-        font-size: 0.875rem !important;
-        font-weight: 500 !important;
+        font-size: 0.9rem !important;
+        font-weight: 600 !important;
         color: {COLORS['on_surface_variant']} !important;
         text-transform: uppercase !important;
         letter-spacing: 0.05em !important;
@@ -443,12 +461,12 @@ st.markdown(f"""
     /* ===== CUSTOM COMPONENTS ===== */
     .hero-section {{
         background: linear-gradient(135deg, {COLORS['primary_container']} 0%, {COLORS['secondary_container']} 100%);
-        border-radius: 32px;
-        padding: 3rem 2rem;
-        margin-bottom: 2rem;
+        border-radius: 24px;
+        padding: 1.5rem 2rem;
+        margin-bottom: 1.5rem;
         text-align: center;
         border: 2px solid {COLORS['outline_variant']};
-        box-shadow: 0 8px 24px rgba(255, 107, 53, 0.15);
+        box-shadow: 0 4px 16px rgba(255, 107, 53, 0.12);
     }}
     
     .data-grid {{
@@ -506,13 +524,12 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-# HERO SECTION
+# SECTION
 
 st.markdown("""
 <div class="hero-section animate-in">
-    <h1 class="display-large"> Wildfire Detection and Risk Assessment</h1>
-    <p class="body-large" style="color: #504349; margin-top: 0.5rem;">Professional Edition - Real-Time API Integration</p>
-</div>
+    <h1 class="headline-medium">Wildfire Detection and Risk Assessment</h1>
+    </div>
 """, unsafe_allow_html=True)
 
 # Initialize session state
@@ -610,9 +627,27 @@ with tab1:
         m1 = folium.Map(
             location=center,
             zoom_start=zoom,
-            tiles='CartoDB positron',
-            attr='© OpenStreetMap contributors, © CartoDB'
+            min_zoom=2,
+            tiles='OpenStreetMap',
+            attr='OpenStreetMap'
         )
+        
+        # Add Satellite Layer
+        folium.TileLayer(
+            tiles='Esri.WorldImagery',
+            attr='Esri',
+            name='Satellite',
+            overlay=False,
+            control=True
+        ).add_to(m1)
+        
+        # Add Borders and Labels overlay
+        folium.TileLayer(
+            tiles='https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+            attr='Esri',
+            name='Borders',
+            overlay=True
+        ).add_to(m1)
         
         # Add fires if available
         if st.session_state.fires_data and st.session_state.fires_data.get('count') != "N/A" and st.session_state.fires_data.get('count', 0) > 0:
@@ -672,11 +707,15 @@ with tab1:
                         """, max_width=300)
                     ).add_to(m1)
             
+        
             # Fit bounds
             if len(fires) > 0:
                 lats = [f['latitude'] for f in fires]
                 lons = [f['longitude'] for f in fires]
                 m1.fit_bounds([[min(lats), min(lons)], [max(lats), max(lons)]])
+        
+        # Add Layer Control
+        folium.LayerControl().add_to(m1)
         
         st_folium(m1, height=600, key="fire_map", width='stretch')
         
@@ -748,28 +787,47 @@ with tab1:
                         y=timeline_data['count'],
                         marker=dict(
                             color=COLORS['primary'],
-                            line=dict(color=COLORS['primary'], width=1)
+                            line=dict(color=COLORS['primary'], width=0),
+                            opacity=0.8
                         ),
-                        name='Fire Detections'
+                        name='Fire Detections',
+                        text=timeline_data['count'],
+                        textposition='outside',
+                        textfont=dict(size=11, family='Google Sans', color=COLORS['on_surface']),
+                        hovertemplate='<b>%{x}</b><br>Fires: %{y}<extra></extra>'
                     ))
                     
                     fig_timeline.update_layout(
-                        height=250,
-                        margin=dict(l=0, r=0, t=0, b=0),
+                        height=300,
+                        margin=dict(l=50, r=30, t=30, b=50),
                         paper_bgcolor='rgba(0,0,0,0)',
-                        plot_bgcolor='rgba(0,0,0,0)',
-                        font=dict(family='Google Sans', size=12, color=COLORS['on_surface']),
+                        plot_bgcolor='rgba(255,255,255,0.5)',
+                        font=dict(family='Google Sans', size=13, color=COLORS['on_surface']),
                         xaxis=dict(
                             showgrid=False,
-                            title=dict(text='Detection Date', font=dict(size=11, weight=500))
+                            zeroline=False,
+                            title=dict(
+                                text='<b>Detection Date</b>', 
+                                font=dict(size=14, family='Google Sans', color=COLORS['on_surface'])
+                            ),
+                            tickfont=dict(size=12, color=COLORS['on_surface_variant']),
+                            tickangle=-45
                         ),
                         yaxis=dict(
                             showgrid=True,
-                            gridcolor=COLORS['outline_variant'],
+                            gridcolor='rgba(0,0,0,0.08)',
                             gridwidth=1,
-                            title=dict(text='Number of Fires', font=dict(size=11, weight=500))
+                            zeroline=True,
+                            zerolinecolor='rgba(0,0,0,0.2)',
+                            zerolinewidth=1,
+                            title=dict(
+                                text='<b>Number of Fires</b>', 
+                                font=dict(size=14, family='Google Sans', color=COLORS['on_surface'])
+                            ),
+                            tickfont=dict(size=12, color=COLORS['on_surface_variant'])
                         ),
-                        hovermode='x'
+                        hovermode='x',
+                        bargap=0.2
                     )
                     
                     st.plotly_chart(fig_timeline, width='stretch', config={'displayModeBar': False})
@@ -789,18 +847,37 @@ with tab2:
         st.markdown('<h3 class="title-large"> Select Analysis Location</h3>', unsafe_allow_html=True)
         st.markdown('<p style="font-size: 0.9rem; color: #504349; margin-bottom: 1rem;"> Click anywhere on the map to select coordinates for risk assessment</p>', unsafe_allow_html=True)
         
-        # Create map restricted to Nepal
+        # Create map restricted to Nepal with limits
         m2 = folium.Map(
             location=[28.3949, 84.1240],  # Center of Nepal
             zoom_start=7,
-            min_zoom=6,
+            min_zoom=5,  # Relaxed zoom limits
+            max_zoom=18,
             max_bounds=True,
-            min_lat=26.0,
-            max_lat=31.0,
-            min_lon=80.0,
-            max_lon=89.0,
-            tiles='CartoDB positron'
+            min_lat=25.0, # Widened slightly
+            max_lat=32.0,
+            min_lon=79.0,
+            max_lon=90.0,
+            tiles='OpenStreetMap',
+            attr='OpenStreetMap'
         )
+
+        # Add Satellite Layer
+        folium.TileLayer(
+            tiles='Esri.WorldImagery',
+            attr='Esri',
+            name='Satellite',
+            overlay=False,
+            control=True
+        ).add_to(m2)
+        
+        # Add Borders and Labels overlay
+        folium.TileLayer(
+            tiles='https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+            attr='Esri',
+            name='Borders',
+            overlay=True
+        ).add_to(m2)
         
         # Add marker if location selected
         if st.session_state.selected_location:
@@ -809,6 +886,9 @@ with tab2:
                 popup=f"Analysis Point<br>{st.session_state.selected_location[0]:.4f}, {st.session_state.selected_location[1]:.4f}",
                 icon=folium.Icon(color='blue', icon='crosshairs', prefix='fa')
             ).add_to(m2)
+        
+        # Add Layer Control
+        folium.LayerControl().add_to(m2)
         
         map_data = st_folium(m2, height=600, key="risk_map", width='stretch')
         
@@ -823,9 +903,72 @@ with tab2:
                 st.session_state.env_data = None
                 st.rerun()
             else:
-                st.warning("⚠️ Please select a location within Nepal boundaries.")
+                st.warning(" Please select a location within Nepal boundaries.")
         
         st.markdown('</div>', unsafe_allow_html=True)
+
+        # Environmental Data Table (moved from col2)
+        if st.session_state.env_data:
+            st.markdown('<div class="elevated-card" style="margin-top: 1rem;">', unsafe_allow_html=True)
+            st.markdown('<h3 class="title-large"> Environmental Data</h3>', unsafe_allow_html=True)
+            
+            features = st.session_state.env_data['features']
+            
+            # Create a full dataframe of all features
+            # Format keys for better readability
+            formatted_data = []
+            for key, value in features.items():
+                # Format key: replace underscores with spaces, title case
+                readable_key = key.replace('_', ' ').title().replace('Pct', '(%)').replace('Kpa', '(kPa)').replace('Celsius', '(°C)')
+                
+                # Format value
+                if isinstance(value, float):
+                    val_str = f"{value:.4f}"
+                else:
+                    val_str = str(value)
+                
+                formatted_data.append({"Parameter": readable_key, "Value": val_str})
+            
+            # Display as a dataframe with full width
+            st.dataframe(pd.DataFrame(formatted_data), use_container_width=True, hide_index=True, height=300)
+            
+            with st.expander("Values History (Past 7 Days)", expanded=False):
+                # Create Plotly chart for humidity lag
+                lag_data = {
+                    'Day': ['7d ago', '3d ago', '1d ago', 'Today'],
+                    'Humidity (%)': [
+                        features.get('relative_humidity_pct_lag7', 0),
+                        features.get('relative_humidity_pct_lag3', 0),
+                        features.get('relative_humidity_pct_lag1', 0),
+                        features.get('relative_humidity_pct', 0)
+                    ]
+                }
+                
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=lag_data['Day'],
+                    y=lag_data['Humidity (%)'],
+                    mode='lines+markers',
+                    name='Relative Humidity',
+                    line=dict(color=COLORS['primary'], width=3, shape='spline'),
+                    marker=dict(size=12, color=COLORS['primary'], line=dict(width=2, color='white')),
+                    fill='tozeroy',
+                    fillcolor='rgba(255, 107, 53, 0.1)'
+                ))
+                
+                fig.update_layout(
+                    height=250,
+                    margin=dict(l=40, r=20, t=30, b=40),
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(255,255,255,0.5)',
+                    font=dict(family='Google Sans', size=12, color=COLORS['on_surface']),
+                    xaxis=dict(showgrid=True, title='Date'),
+                    yaxis=dict(showgrid=True, title='Relative Humidity (%)')
+                )
+                
+                st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
+            st.markdown('</div>', unsafe_allow_html=True)
     
     with col2:
         st.markdown('<div class="material-card">', unsafe_allow_html=True)
@@ -867,262 +1010,77 @@ with tab2:
                         st.info(" Troubleshooting:\n- Verify Google Earth Engine authentication\n- Check Weather API credentials\n- Ensure coordinates are valid")
             
             # Display environmental data
+            # Display environmental data (removed from here)
+            
+            # Risk Analysis Section (moved here)
             if st.session_state.env_data:
-                features = st.session_state.env_data['features']
+                st.markdown("---")
+                st.markdown("####  Risk Analysis")
                 
-                st.markdown("####  Current Weather Conditions")
-                
-                # Metrics grid
-                col_a, col_b = st.columns(2)
-                with col_a:
-                    st.markdown(f"""
-                    <div class="metric-card">
-                        <div class="metric-value">{features.get('relative_humidity_pct', 0):.1f}<span class="metric-unit">%</span></div>
-                        <div class="metric-label">Relative Humidity</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with col_b:
-                    st.markdown(f"""
-                    <div class="metric-card" style="border-left-color: {COLORS['secondary']};">
-                        <div class="metric-value" style="color: {COLORS['secondary']};">{features.get('vapor_pressure_deficit_kpa', 0):.2f}<span class="metric-unit">kPa</span></div>
-                        <div class="metric-label">VPD</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                col_c, col_d = st.columns(2)
-                with col_c:
-                    st.markdown(f"""
-                    <div class="metric-card" style="border-left-color: {COLORS['tertiary']};">
-                        <div class="metric-value" style="color: {COLORS['tertiary']};">{features.get('dewpoint_2m_celsius', 0):.1f}<span class="metric-unit">°C</span></div>
-                        <div class="metric-label">Dew Point</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with col_d:
-                    st.markdown(f"""
-                    <div class="metric-card" style="border-left-color: {COLORS['chart_2']};">
-                        <div class="metric-value" style="color: {COLORS['chart_2']};">{features.get('clear_day_coverage', 0):.0f}<span class="metric-unit">%</span></div>
-                        <div class="metric-label">Clear Sky</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                # Fire Proximity Metric
-                col_e, col_f = st.columns(2)
-                with col_e:
-                    fire_count = features.get('fire_density_50km', 0)
-                    
-                    # Determine color based on count
-                    fire_color = COLORS['low']
-                    if fire_count > 5: fire_color = COLORS['medium']
-                    if fire_count > 20: fire_color = COLORS['high']
-                    
-                    st.markdown(f"""
-                    <div class="metric-card" style="border-left-color: {fire_color};">
-                        <div class="metric-value" style="font-size: 2rem; color: {fire_color};">{fire_count}</div>
-                        <div class="metric-label">Active Fires (50km)</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                # Historical trends chart
-                st.markdown("####  Historical Trends (Past 7 Days)")
-                
-                # Create Plotly chart for humidity lag
-                lag_data = {
-                    'Day': ['7d ago', '3d ago', '1d ago', 'Today'],
-                    'Humidity (%)': [
-                        features.get('relative_humidity_pct_lag7', 0),
-                        features.get('relative_humidity_pct_lag3', 0),
-                        features.get('relative_humidity_pct_lag1', 0),
-                        features.get('relative_humidity_pct', 0)
-                    ]
-                }
-                
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(
-                    x=lag_data['Day'],
-                    y=lag_data['Humidity (%)'],
-                    mode='lines+markers',
-                    name='Relative Humidity',
-                    line=dict(color=COLORS['primary'], width=3),
-                    marker=dict(size=10, color=COLORS['primary'], line=dict(width=2, color='white'))
-                ))
-                
-                fig.update_layout(
-                    height=250,
-                    margin=dict(l=0, r=0, t=0, b=0),
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    font=dict(family='Google Sans', size=12, color=COLORS['on_surface']),
-                    xaxis=dict(
-                        showgrid=True,
-                        gridcolor=COLORS['outline_variant'],
-                        gridwidth=1,
-                        title=dict(text='Time Period', font=dict(size=11, weight=500))
-                    ),
-                    yaxis=dict(
-                        showgrid=True,
-                        gridcolor=COLORS['outline_variant'],
-                        gridwidth=1,
-                        title=dict(text='Humidity (%)', font=dict(size=11, weight=500)),
-                        range=[0, 100]
-                    ),
-                    hovermode='x unified'
-                )
-                
-                st.plotly_chart(fig, width='stretch', config={'displayModeBar': False})
-                
-                # Satellite data
-                st.markdown("####  Satellite Observations")
-                col_g, col_h = st.columns(2)
-                with col_g:
-                    st.markdown(f"""
-                    <div class="metric-card" style="border-left-color: {COLORS['success']};">
-                        <div class="metric-value" style="color: {COLORS['success']};">{features.get('landsat_savi', 0):.3f}</div>
-                        <div class="metric-label">SAVI Index</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with col_h:
-                    st.markdown(f"""
-                    <div class="metric-card" style="border-left-color: {COLORS['error']};">
-                        <div class="metric-value" style="color: {COLORS['error']};">{features.get('lst_day_c', 0):.1f}<span class="metric-unit">°C</span></div>
-                        <div class="metric-label">LST (Day)</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                # Step 2: Risk assessment
                 if st.button(" Assess Fire Risk", type="primary", width='stretch'):
-                    with st.spinner(" Running CatBoost ML model for risk prediction..."):
+                    with st.spinner(" Running CatBoost ML model..."):
                         try:
                             pre_fire = backend["pre_fire"]
+                            features = st.session_state.env_data['features']
                             result = pre_fire.predict_from_features(features)
                             
                             if "error" in result:
                                 st.error(f" Model error: {result['error']}")
-                                st.info(" Ensure the ML model is properly trained and feature names match.")
                             else:
                                 prob = result['probability']
                                 level = result['risk_level']
                                 alert = result['alert_priority']
                                 
-                                # Risk visualization
+                                # Visuals
                                 risk_color = {
-                                    'Critical': COLORS['critical'],
-                                    'High': COLORS['high'],
-                                    'Medium': COLORS['medium'],
-                                    'Low': COLORS['low']
+                                    'Critical': COLORS['critical'], 'High': COLORS['high'],
+                                    'Medium': COLORS['medium'], 'Low': COLORS['low']
                                 }.get(level, COLORS['medium'])
                                 
                                 st.markdown(f"""
                                 <div style="background: linear-gradient(135deg, {risk_color}15 0%, {risk_color}05 100%); 
                                             padding: 1.5rem; border-radius: 20px; border-left: 4px solid {risk_color};
                                             margin: 1rem 0;">
-                                    <div style="font-size: 0.85rem; font-weight: 600; color: {risk_color}; 
-                                                text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem;">
-                                         Risk Assessment
-                                    </div>
                                     <div style="font-size: 2rem; font-weight: 700; color: {risk_color}; margin-bottom: 0.25rem;">
                                         {level.upper()}
                                     </div>
-                                    <div style="font-size: 1.5rem; font-weight: 600; color: {COLORS['on_surface']};">
+                                    <div style="font-size: 1.2rem; font-weight: 600; color: {COLORS['on_surface']};">
                                         {prob*100:.1f}% Probability
-                                    </div>
-                                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid {risk_color}30;">
-                                        <span class="status-chip chip-{level.lower()}" style="border-left-color: {risk_color};">
-                                             Alert Level: {alert.upper()}
-                                        </span>
                                     </div>
                                 </div>
                                 """, unsafe_allow_html=True)
                                 
-                                # Probability gauge
+                                # Gauge
                                 fig_gauge = go.Figure(go.Indicator(
                                     mode="gauge+number",
                                     value=prob * 100,
-                                    title={'text': "Fire Risk Probability", 'font': {'size': 14, 'family': 'Google Sans'}},
-                                    number={'suffix': "%", 'font': {'size': 32, 'family': 'Google Sans Display'}},
+                                    number={'suffix': "%", 'font': {'size': 24, 'color': risk_color}},
                                     gauge={
-                                        'axis': {'range': [0, 100], 'tickwidth': 2, 'tickcolor': COLORS['outline']},
-                                        'bar': {'color': risk_color, 'thickness': 0.8},
-                                        'bgcolor': COLORS['surface_container'],
-                                        'borderwidth': 2,
-                                        'bordercolor': COLORS['outline_variant'],
+                                        'axis': {'range': [0, 100]},
+                                        'bar': {'color': risk_color},
                                         'steps': [
-                                            {'range': [0, 40], 'color': hex_to_rgba(COLORS['low'], 0.2)},
-                                            {'range': [40, 60], 'color': hex_to_rgba(COLORS['medium'], 0.2)},
-                                            {'range': [60, 80], 'color': hex_to_rgba(COLORS['high'], 0.2)},
-                                            {'range': [80, 100], 'color': hex_to_rgba(COLORS['critical'], 0.2)}
-                                        ],
-                                        'threshold': {
-                                            'line': {'color': "white", 'width': 4},
-                                            'thickness': 0.75,
-                                            'value': prob * 100
-                                        }
+                                            {'range': [0, 25], 'color': 'rgba(76, 175, 80, 0.15)'},
+                                            {'range': [25, 50], 'color': 'rgba(255, 193, 7, 0.15)'},
+                                            {'range': [50, 75], 'color': 'rgba(255, 152, 0, 0.15)'},
+                                            {'range': [75, 100], 'color': 'rgba(244, 67, 54, 0.15)'}
+                                        ]
                                     }
                                 ))
+                                fig_gauge.update_layout(height=150, margin=dict(l=20, r=20, t=20, b=20))
+                                st.plotly_chart(fig_gauge, use_container_width=True)
                                 
-                                fig_gauge.update_layout(
-                                    height=250,
-                                    margin=dict(l=20, r=20, t=40, b=20),
-                                    paper_bgcolor='rgba(0,0,0,0)',
-                                    font=dict(family='Google Sans', color=COLORS['on_surface'])
-                                )
-                                
-                                st.plotly_chart(fig_gauge, width='stretch', config={'displayModeBar': False})
-                                
-                                # Recommendations
-                                st.markdown("####  Recommended Actions")
+                                # Recommendation
                                 if alert == "Critical":
-                                    st.markdown(f"""
-                                    <div class="material-card" style="background: {COLORS['error']}10; border-left: 4px solid {COLORS['error']};">
-                                        <ul style="margin: 0; padding-left: 1.5rem; color: {COLORS['on_surface']};">
-                                            <li style="margin: 0.5rem 0;"><strong> Immediate mobilization recommended</strong></li>
-                                            <li style="margin: 0.5rem 0;"> Alert local response teams</li>
-                                            <li style="margin: 0.5rem 0;"> Monitor satellite feeds continuously</li>
-                                            <li style="margin: 0.5rem 0;"> Prepare evacuation plans</li>
-                                        </ul>
-                                    </div>
-                                    """, unsafe_allow_html=True)
+                                    st.error("Immediate Action Required")
                                 elif alert == "High":
-                                    st.markdown(f"""
-                                    <div class="material-card" style="background: {COLORS['warning']}10; border-left: 4px solid {COLORS['warning']};">
-                                        <ul style="margin: 0; padding-left: 1.5rem; color: {COLORS['on_surface']};">
-                                            <li style="margin: 0.5rem 0;"> Prepare fire suppression resources</li>
-                                            <li style="margin: 0.5rem 0;"> Increase monitoring frequency</li>
-                                            <li style="margin: 0.5rem 0;"> Issue public awareness warnings</li>
-                                        </ul>
-                                    </div>
-                                    """, unsafe_allow_html=True)
+                                    st.warning("High Vigilance Needed")
                                 elif alert == "Watch":
-                                    st.markdown(f"""
-                                    <div class="material-card" style="background: {COLORS['info']}10; border-left: 4px solid {COLORS['info']};">
-                                        <ul style="margin: 0; padding-left: 1.5rem; color: {COLORS['on_surface']};">
-                                            <li style="margin: 0.5rem 0;"> Monitor weather changes closely</li>
-                                            <li style="margin: 0.5rem 0;">  Verify with local ground observations</li>
-                                        </ul>
-                                    </div>
-                                    """, unsafe_allow_html=True)
+                                    st.info("Monitor Conditions")
                                 else:
-                                    st.markdown(f"""
-                                    <div class="material-card" style="background: {COLORS['success']}10; border-left: 4px solid {COLORS['success']};">
-                                        <p style="margin: 0; color: {COLORS['on_surface']};">
-                                             Routine monitoring sufficient<br>
-                                             No immediate threat detected
-                                        </p>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                                
-                                # Show ALL parameters after assessment
-                                st.markdown("---")
-                                with st.expander(" View Complete Parameter List", expanded=False):
-                                    st.markdown("##### All Model Input Features (From Real APIs)")
-                                    # Convert features to a readable dataframe
-                                    params_df = pd.DataFrame(list(features.items()), columns=['Parameter', 'Value'])
-                                    # Format values (round floats)
-                                    params_df['Value'] = params_df['Value'].apply(lambda x: f"{x:.4f}" if isinstance(x, float) else x)
-                                    st.dataframe(params_df, width='stretch', hide_index=True)
-                                
+                                    st.success("Routine Monitoring")
+                                    
                         except Exception as e:
                             st.error(f" Analysis failed: {str(e)}")
-                            st.info(" Ensure ML model is loaded and feature names match the training data.")
         else:
             st.markdown(f"""
             <div class="material-card" style="text-align: center; padding: 2rem;">
