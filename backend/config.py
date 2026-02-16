@@ -48,7 +48,6 @@ GOOGLE_EARTH_ENGINE_SERVICE_ACCOUNT = os.getenv('GOOGLE_EARTH_ENGINE_SERVICE_ACC
 GOOGLE_EARTH_ENGINE_PRIVATE_KEY_PATH = os.getenv('GOOGLE_EARTH_ENGINE_PRIVATE_KEY_PATH')
 NASA_FIRMS_API_KEY = os.getenv('NASA_FIRMS_API_KEY')
 
-
 # Model Configuration
 DEFAULT_ENSEMBLE_WEIGHTS = {
     'catboost': 0.5,
@@ -84,7 +83,7 @@ def ensure_directories():
 if __name__ == "__main__":
     # When run directly, create all directories and print configuration
     ensure_directories()
-    print("✅ Directory structure created successfully!")
+    print(" Directory structure created successfully!")
     print(f"\nBackend Root: {BACKEND_ROOT}")
     print(f"Project Root: {PROJECT_ROOT}")
     print(f"Data Directory: {DATA_DIR}")

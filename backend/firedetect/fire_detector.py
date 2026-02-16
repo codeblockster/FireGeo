@@ -11,7 +11,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 class FireDetector:
     
     
@@ -307,7 +306,6 @@ class FireDetector:
         
         logger.info(f"Generated statistics for {stats['total_fires']} fires")
         return stats
-
 
 # Example usage
 if __name__ == "__main__":

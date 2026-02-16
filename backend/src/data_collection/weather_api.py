@@ -12,7 +12,6 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-
 class WeatherDataFetcher:
     """
     Weather data fetcher using Open-Meteo API (free, no key required).
@@ -85,18 +84,18 @@ class WeatherDataFetcher:
             data = response.json().get('current', {})
             
             result = {
-                'temp': float(data.get('temperature_2m', 25.0)),
-                'humidity': float(data.get('relative_humidity_2m', 50.0)),
-                'dewpoint': float(data.get('dew_point_2m', 15.0)),
-                'cloud_cover': float(data.get('cloud_cover', 20.0)),
-                'wind_speed': float(data.get('wind_speed_10m', 10.0)),
-                'wind_direction': float(data.get('wind_direction_10m', 180.0)),
-                'wind_u': float(data.get('wind_u_component_10m', 0.0)),
-                'wind_v': float(data.get('wind_v_component_10m', 0.0)),
-                'precip': float(data.get('precipitation', 0.0)),
-                'skin_temp': float(data.get('surface_temperature', 25.0)),
-                'soil_temp': float(data.get('soil_temperature_0_to_7cm', 20.0)),
-                'soil_moisture': float(data.get('soil_moisture_0_to_7cm', 0.3))
+                'temp': float(data.get('temperature_2m') if data.get('temperature_2m') is not None else 25.0),
+                'humidity': float(data.get('relative_humidity_2m') if data.get('relative_humidity_2m') is not None else 50.0),
+                'dewpoint': float(data.get('dew_point_2m') if data.get('dew_point_2m') is not None else 15.0),
+                'cloud_cover': float(data.get('cloud_cover') if data.get('cloud_cover') is not None else 20.0),
+                'wind_speed': float(data.get('wind_speed_10m') if data.get('wind_speed_10m') is not None else 10.0),
+                'wind_direction': float(data.get('wind_direction_10m') if data.get('wind_direction_10m') is not None else 180.0),
+                'wind_u': float(data.get('wind_u_component_10m') if data.get('wind_u_component_10m') is not None else 0.0),
+                'wind_v': float(data.get('wind_v_component_10m') if data.get('wind_v_component_10m') is not None else 0.0),
+                'precip': float(data.get('precipitation') if data.get('precipitation') is not None else 0.0),
+                'skin_temp': float(data.get('surface_temperature') if data.get('surface_temperature') is not None else 25.0),
+                'soil_temp': float(data.get('soil_temperature_0_to_7cm') if data.get('soil_temperature_0_to_7cm') is not None else 20.0),
+                'soil_moisture': float(data.get('soil_moisture_0_to_7cm') if data.get('soil_moisture_0_to_7cm') is not None else 0.3)
             }
             
             logger.debug(f"Current weather: temp={result['temp']}°C, humidity={result['humidity']}%")
@@ -135,8 +134,9 @@ class WeatherDataFetcher:
                 - wind_v: List of daily mean v wind component (m/s)
                 - dates: List of date strings
         """
-        end_date = datetime.now().strftime('%Y-%m-%d')
-        start_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
+        # Archive API has a delay of 2-5 days. Use 5 days ago as end date.
+        end_date = (datetime.now() - timedelta(days=5)).strftime('%Y-%m-%d')
+        start_date = (datetime.now() - timedelta(days=days_back + 5)).strftime('%Y-%m-%d')
         
         params = {
             'latitude': lat,
@@ -397,7 +397,6 @@ class WeatherDataFetcher:
             }
         }
 
-
 # Test code
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
@@ -430,4 +429,4 @@ if __name__ == "__main__":
     print(f"   7-day total precip: {summary['trends']['total_precip_7d']:.1f}mm")
     
     print("\n" + "=" * 70)
-    print("✅ All tests complete!")
+    print(" All tests complete!")

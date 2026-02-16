@@ -56,10 +56,10 @@ class GEEExtractor:
                 
                 if project_id:
                     ee.Initialize(credentials, project=project_id)
-                    logger.info(f"✓ GEE initialized with service account (project: {project_id})")
+                    logger.info(f" GEE initialized with service account (project: {project_id})")
                 else:
                     ee.Initialize(credentials)
-                    logger.info("✓ GEE initialized with service account (no project)")
+                    logger.info(" GEE initialized with service account (no project)")
                 
                 self.mock_mode = False
             else:
@@ -69,16 +69,16 @@ class GEEExtractor:
                 if project_id:
                     logger.info(f"Initializing GEE with project: {project_id}")
                     ee.Initialize(project=project_id)
-                    logger.info(f"✓ GEE initialized successfully with project: {project_id}")
+                    logger.info(f" GEE initialized successfully with project: {project_id}")
                 else:
                     # Try legacy default
                     logger.warning("GOOGLE_CLOUD_PROJECT not set in .env, trying legacy project...")
                     try:
                         ee.Initialize(project='ee-legacy')
-                        logger.info("✓ GEE initialized with legacy project")
+                        logger.info(" GEE initialized with legacy project")
                     except:
                         ee.Initialize()
-                        logger.info("✓ GEE initialized without project")
+                        logger.info(" GEE initialized without project")
                 
                 self.mock_mode = False
                 
@@ -645,7 +645,6 @@ class GEEExtractor:
                 's2_cloud_cover_percent': 20.0
             }
 
-
     def get_firms_map_id(self, date: str = None) -> str:
         """
         Get Earth Engine Map ID for FIRMS dataset (for frontend display)
@@ -809,7 +808,6 @@ class GEEExtractor:
             'wind_direction': round(random.uniform(0, 360), 1),
             'wind_speed': round(random.uniform(5, 30), 1)
         }
-
 
 # Singleton instance
 _gee_extractor = None

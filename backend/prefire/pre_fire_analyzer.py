@@ -21,7 +21,6 @@ from backend.prefire.feature_engineer import FeatureEngineer
 
 logger = logging.getLogger(__name__)
 
-
 class PreFireAnalyzer:
     """
     Analyzer for Pre-Fire Risk Assessment.
@@ -57,7 +56,7 @@ class PreFireAnalyzer:
         try:
             self.model = CatBoostPredictor.load(models_dir)
             self.model_loaded = True
-            logger.info("✓ CatBoost model loaded successfully")
+            logger.info(" CatBoost model loaded successfully")
         except Exception as e:
             logger.error(f"Failed to load CatBoost model: {e}")
             logger.warning("Using mock predictions (model not available)")
@@ -142,7 +141,6 @@ class PreFireAnalyzer:
             result['risk_score'] = result['probability']
         
         return result
-
 
     def predict_from_features(self, features: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -516,7 +514,6 @@ class PreFireAnalyzer:
             "mode": "production" if self.model_loaded else "mock"
         }
 
-
 # Convenience function
 def create_analyzer(models_dir: Optional[str] = None) -> PreFireAnalyzer:
     """
@@ -529,7 +526,6 @@ def create_analyzer(models_dir: Optional[str] = None) -> PreFireAnalyzer:
         Configured PreFireAnalyzer instance
     """
     return PreFireAnalyzer(models_dir=models_dir)
-
 
 # Example usage
 if __name__ == "__main__":
@@ -556,12 +552,12 @@ if __name__ == "__main__":
     result = analyzer.analyze_location(lat=28.3949, lon=84.1240)
     
     if "error" not in result:
-        print(f"   ✓ Risk Level: {result['risk_level']}")
-        print(f"   ✓ Probability: {result['probability']:.1%}")
-        print(f"   ✓ Alert Priority: {result['alert_priority']}")
-        print(f"   ✓ Model Used: {result.get('model_used', False)}")
+        print(f"    Risk Level: {result['risk_level']}")
+        print(f"    Probability: {result['probability']:.1%}")
+        print(f"    Alert Priority: {result['alert_priority']}")
+        print(f"    Model Used: {result.get('model_used', False)}")
     else:
-        print(f"   ✗ Error: {result['error']}")
+        print(f"    Error: {result['error']}")
     
     # 3. Test risk map generation
     print("\n3. Testing risk map generation (small 3x3 grid)...")
@@ -575,11 +571,11 @@ if __name__ == "__main__":
     )
     
     if "error" not in risk_map:
-        print(f"   ✓ Generated {risk_map['metadata']['count']} risk zones")
-        print(f"   ✓ Success rate: {risk_map['metadata']['success_rate']}%")
-        print(f"   ✓ Area covered: {risk_map['metadata']['area_km']} km²")
+        print(f"    Generated {risk_map['metadata']['count']} risk zones")
+        print(f"    Success rate: {risk_map['metadata']['success_rate']}%")
+        print(f"    Area covered: {risk_map['metadata']['area_km']} km²")
     else:
-        print(f"   ✗ Error: {risk_map['error']}")
+        print(f"    Error: {risk_map['error']}")
     
     print("\n" + "=" * 70)
     print("Test complete!")

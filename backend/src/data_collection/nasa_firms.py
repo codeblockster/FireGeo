@@ -17,7 +17,12 @@ from cachetools.keys import hashkey
 api_cache = TTLCache(maxsize=100, ttl=1800)
 
 # Load environment variables
-load_dotenv()
+from dotenv import load_dotenv
+from backend.config import PROJECT_ROOT
+
+# Explicitly load from project root to ensure it's found
+env_path = PROJECT_ROOT / ".env"
+load_dotenv(env_path)
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +46,19 @@ class NASAFirmsAPI:
         
         if not self.api_key or self.api_key == "your_nasa_firms_key_here":
             logger.warning("NASA FIRMS API key not found or is default. Using MOCK DATA.")
+            print("\n" + "="*50)
+            print(" WARNING: NASA FIRMS API KEY NOT FOUND")
+            print(" SYSTEM IS RUNNING IN MOCK MODE (SIMULATED DATA)")
+            print(" To use real data, set NASA_FIRMS_API_KEY in .env file")
+            print("="*50 + "\n")
             logger.warning("Please set NASA_FIRMS_API_KEY in your .env file to get real fire data.")
             self.mock_mode = True
         else:
             logger.info(f"NASA FIRMS API key found: {self.api_key[:4]}...{self.api_key[-4:]}")
+            print("\n" + "="*50)
+            print(f" SUCCESS: NASA FIRMS API KEY FOUND ({self.api_key[:4]}...)")
+            print(" SYSTEM IS RUNNING IN REAL API MODE")
+            print("="*50 + "\n")
             self.mock_mode = False
     
     @cached(cache=api_cache)
@@ -225,7 +239,6 @@ class NASAFirmsAPI:
         
         logger.info(f"Generated {len(fires)} mock fires")
         return fires
-
 
 # Singleton instance
 _nasa_firms_api = None

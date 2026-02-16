@@ -1,5 +1,6 @@
 """
 Wildfire Management System - Premium Material 3 Expressive UI
+Professional Edition with Real-Time API Integration
 Designed for Pixel-class experience with scientific precision
 """
 
@@ -19,37 +20,45 @@ from datetime import datetime
 from folium.plugins import HeatMap
 import plotly.graph_objects as go
 import plotly.express as px
-# import geemap.foliumap as geemap  # Commented out due to compatibility issues
 
 # Direct imports from backend modules
 from backend.src.data_collection.gee_extractor import get_gee_extractor
 from backend.firedetect import FireDetector
 from backend.prefire import PreFireAnalyzer
-from backend.postfire import PostFireAnalyzer, SpreadPredictor
 
 st.set_page_config(
-    page_title="Wildfire Intelligence",
+    page_title="Wildfire Intelligence - Professional Edition",
     layout="wide",
-    page_icon="Fire",
+    page_icon=" ",
     initial_sidebar_state="expanded"
 )
 
-# Initialize backend components
+# BACKEND INITIALIZATION WITH ERROR HANDLING
+
 @st.cache_resource
 def get_backend_components():
-    return {
-        "gee": get_gee_extractor(),
-        "fire_detector": FireDetector(),
-        "pre_fire": PreFireAnalyzer(),
-        "post_fire": PostFireAnalyzer(),
-        "spread": SpreadPredictor()
-    }
+    """Initialize all backend components with proper error handling."""
+    try:
+        components = {
+            "gee": get_gee_extractor(),
+            "fire_detector": FireDetector(),
+            "pre_fire": PreFireAnalyzer(),
+            
+           
+        }
+        return components
+    except Exception as e:
+        st.error(f" Backend initialization failed: {str(e)}")
+        st.info("Please ensure all backend modules are properly configured and dependencies are installed.")
+        return None
 
 backend = get_backend_components()
 
-# ============================================================================
+# Exit if backend initialization failed
+if backend is None:
+    st.stop()
+
 # MATERIAL 3 EXPRESSIVE DESIGN SYSTEM
-# ============================================================================
 
 # Dynamic color palette (Material 3 Expressive)
 COLORS = {
@@ -135,7 +144,7 @@ st.markdown(f"""
     
     /* Remove default Streamlit padding */
     .block-container {{
-        padding-top: 0rem !important; /* Reduced padding since header is gone */
+        padding-top: 0rem !important;
         padding-bottom: 2rem !important;
         max-width: 1400px !important;
     }}
@@ -497,13 +506,12 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-# ============================================================================
 # HERO SECTION
-# ============================================================================
 
 st.markdown("""
 <div class="hero-section animate-in">
-    <h1 class="display-large">Wildfire Intelligence</h1>
+    <h1 class="display-large"> Wildfire Detection and Risk Assessment</h1>
+    <p class="body-large" style="color: #504349; margin-top: 0.5rem;">Professional Edition - Real-Time API Integration</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -515,20 +523,17 @@ if 'env_data' not in st.session_state:
 if 'fires_data' not in st.session_state:
     st.session_state.fires_data = None
 
-# ============================================================================
 # TABS
-# ============================================================================
 
-tab1, tab2, tab3 = st.tabs([
-    "Live Fire Detection",
-    "Risk Assessment", 
-    "Spread Prediction"
+tab1, tab2 = st.tabs([
+    " Live Fire Detection",
+    " Risk Assessment", 
+   
 ])
 
-# ==================== TAB 1: FIRE DETECTION ====================
 with tab1:
     st.markdown('<div class="elevated-card animate-in">', unsafe_allow_html=True)
-    st.markdown('<h2 class="headline-medium">🔍 Active Fire Detection</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 class="headline-medium"> Active Fire Detection</h2>', unsafe_allow_html=True)
     st.markdown('<p class="body-large">Real-time monitoring using NASA FIRMS satellite constellation (VIIRS & MODIS sensors)</p>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
     
@@ -536,7 +541,7 @@ with tab1:
     
     with col2:
         st.markdown('<div class="material-card">', unsafe_allow_html=True)
-        st.markdown('<h3 class="title-large">Detection Parameters</h3>', unsafe_allow_html=True)
+        st.markdown('<h3 class="title-large"> Detection Parameters</h3>', unsafe_allow_html=True)
         
         fire_detector = backend["fire_detector"]
         region_map = fire_detector.get_region_map()
@@ -555,32 +560,50 @@ with tab1:
         )
         
         # Detect fires button
-        if st.button("🔍 Detect Active Fires", type="primary", use_container_width=True):
-            with st.spinner(f"Analyzing {region} for active fires..."):
-                result = fire_detector.detect_fires(region, hours=hours)
-                st.session_state.fires_data = result
+        if st.button(" Detect Active Fires", type="primary", width='stretch'):
+            with st.spinner(f" Analyzing {region} for active fires via NASA FIRMS API..."):
+                try:
+                    result = fire_detector.detect_fires(region, hours=hours)
+                    
+                    if result and 'error' not in result:
+                        st.session_state.fires_data = result
+                        fire_count = result.get('count', 0)
+                        
+                        if fire_count == 0:
+                            st.success(f" Analysis complete: No active fires detected in {region}")
+                        else:
+                            st.success(f" Successfully detected {fire_count} active fires in {region}")
+                        st.rerun()
+                    elif 'error' in result:
+                        st.error(f" API Error: {result['error']}")
+                        st.info("Please verify your NASA FIRMS API credentials and network connection.")
+                    else:
+                        st.warning(" No data returned from API. The region may have no active fires.")
+                        
+                except Exception as e:
+                    st.error(f" Detection failed: {str(e)}")
+                    st.info(" Troubleshooting: Ensure backend.firedetect module is properly configured with NASA FIRMS API credentials.")
         
         # Show info for Whole World
         if region == "Whole World":
-            st.info("🌍 Global fire detection may take longer due to the large dataset. Fires will be displayed as a heatmap for better performance.")
-        
+            st.info(" Global fire detection may take longer due to large dataset. Results displayed as heatmap for optimal performance.")
         
         st.markdown('</div>', unsafe_allow_html=True)
         
         # Data source info
         st.markdown(f"""
         <div class="material-card" style="background: {COLORS['info']}10; border-left: 4px solid {COLORS['info']};">
-            <div class="label-large" style="color: {COLORS['info']}; margin-bottom: 0.5rem;">📡 Data Source</div>
+            <div class="label-large" style="color: {COLORS['info']}; margin-bottom: 0.5rem;"> Data Source</div>
             <p style="font-size: 0.9rem; color: {COLORS['on_surface_variant']}; margin: 0;">
                 NASA Fire Information for Resource Management System (FIRMS) provides near real-time active fire data from
-                VIIRS (375m resolution) and MODIS (1km resolution) satellite sensors.
+                VIIRS (375m resolution) and MODIS (1km resolution) satellite sensors with <3 hour latency.
             </p>
         </div>
         """, unsafe_allow_html=True)
     
     with col1:
         st.markdown('<div class="elevated-card">', unsafe_allow_html=True)
-        st.markdown('<h3 class="title-large">📍 Live Fire Map</h3>', unsafe_allow_html=True)
+        st.markdown('<h3 class="title-large"> Live Fire Map</h3>', unsafe_allow_html=True)
         
         # Create folium map
         region_code, center, zoom = region_map[region]
@@ -618,36 +641,36 @@ with tab1:
                 ).add_to(m1)
                 
                 # Individual markers (only for smaller datasets)
-            for fire in fires:
-                color = 'darkred' if fire['confidence'] > 80 else 'red' if fire['confidence'] > 50 else 'orange'
-                
-                folium.CircleMarker(
-                    location=[fire['latitude'], fire['longitude']],
-                    radius=6,
-                    color=color,
-                    fill=True,
-                    fillColor=color,
-                    fillOpacity=0.8,
-                    weight=2,
-                    tooltip=f"🔥 {fire['confidence']}% confidence",
-                    popup=folium.Popup(f"""
-                        <div style="min-width: 200px; font-family: 'Google Sans', sans-serif;">
-                            <div style="background: linear-gradient(135deg, {COLORS['primary']} 0%, {COLORS['secondary']} 100%); 
-                                        color: white; padding: 0.75rem; margin: -0.5rem -0.5rem 0.75rem -0.5rem; 
-                                        border-radius: 8px 8px 0 0;">
-                                <strong style="font-size: 1.1rem;">🔥 Active Fire Detection</strong>
+                for fire in fires:
+                    color = 'darkred' if fire['confidence'] > 80 else 'red' if fire['confidence'] > 50 else 'orange'
+                    
+                    folium.CircleMarker(
+                        location=[fire['latitude'], fire['longitude']],
+                        radius=6,
+                        color=color,
+                        fill=True,
+                        fillColor=color,
+                        fillOpacity=0.8,
+                        weight=2,
+                        tooltip=f" {fire['confidence']}% confidence",
+                        popup=folium.Popup(f"""
+                            <div style="min-width: 200px; font-family: 'Google Sans', sans-serif;">
+                                <div style="background: linear-gradient(135deg, {COLORS['primary']} 0%, {COLORS['secondary']} 100%); 
+                                            color: white; padding: 0.75rem; margin: -0.5rem -0.5rem 0.75rem -0.5rem; 
+                                            border-radius: 8px 8px 0 0;">
+                                    <strong style="font-size: 1.1rem;"> Active Fire Detection</strong>
+                                </div>
+                                <table style="width: 100%; font-size: 0.9rem;">
+                                    <tr><td style="padding: 0.25rem 0;"><strong>Confidence:</strong></td><td>{fire['confidence']}%</td></tr>
+                                    <tr><td style="padding: 0.25rem 0;"><strong>Brightness:</strong></td><td>{fire['brightness']} K</td></tr>
+                                    <tr><td style="padding: 0.25rem 0;"><strong>FRP:</strong></td><td>{fire['frp']:.2f} MW</td></tr>
+                                    <tr><td style="padding: 0.25rem 0;"><strong>Satellite:</strong></td><td>{fire['satellite']}</td></tr>
+                                    <tr><td style="padding: 0.25rem 0;"><strong>Sensor:</strong></td><td>{fire['instrument']}</td></tr>
+                                    <tr><td style="padding: 0.25rem 0;"><strong>Detected:</strong></td><td>{fire['acq_date']} {fire['acq_time']}</td></tr>
+                                </table>
                             </div>
-                            <table style="width: 100%; font-size: 0.9rem;">
-                                <tr><td style="padding: 0.25rem 0;"><strong>Confidence:</strong></td><td>{fire['confidence']}%</td></tr>
-                                <tr><td style="padding: 0.25rem 0;"><strong>Brightness:</strong></td><td>{fire['brightness']} K</td></tr>
-                                <tr><td style="padding: 0.25rem 0;"><strong>FRP:</strong></td><td>{fire['frp']:.2f} MW</td></tr>
-                                <tr><td style="padding: 0.25rem 0;"><strong>Satellite:</strong></td><td>{fire['satellite']}</td></tr>
-                                <tr><td style="padding: 0.25rem 0;"><strong>Sensor:</strong></td><td>{fire['instrument']}</td></tr>
-                                <tr><td style="padding: 0.25rem 0;"><strong>Detected:</strong></td><td>{fire['acq_date']} {fire['acq_time']}</td></tr>
-                            </table>
-                        </div>
-                    """, max_width=300)
-                ).add_to(m1)
+                        """, max_width=300)
+                    ).add_to(m1)
             
             # Fit bounds
             if len(fires) > 0:
@@ -655,27 +678,127 @@ with tab1:
                 lons = [f['longitude'] for f in fires]
                 m1.fit_bounds([[min(lats), min(lons)], [max(lats), max(lons)]])
         
-        st_folium(m1, width=None, height=600, key="fire_map", use_container_width=True)
+        st_folium(m1, height=600, key="fire_map", width='stretch')
+        
+        # Fire Statistics and Timeline (if fires detected)
+        if st.session_state.fires_data and st.session_state.fires_data.get('count', 0) > 0:
+            fires = st.session_state.fires_data['fires']
+            
+            st.markdown("---")
+            st.markdown("####  Fire Detection Statistics")
+            
+            # Get statistics using fire_detector
+            stats = fire_detector.get_statistics(st.session_state.fires_data)
+            
+            # Statistics cards
+            stat_cols = st.columns(4)
+            with stat_cols[0]:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <div class="metric-value" style="font-size: 2rem;">{stats['total_fires']}</div>
+                    <div class="metric-label">Total Fires</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with stat_cols[1]:
+                if 'confidence' in stats:
+                    high_conf = stats['confidence'].get('high_confidence_count', 0)
+                    st.markdown(f"""
+                    <div class="metric-card" style="border-left-color: {COLORS['error']};">
+                        <div class="metric-value" style="color: {COLORS['error']}; font-size: 2rem;">{high_conf}</div>
+                        <div class="metric-label">High Confidence</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            with stat_cols[2]:
+                if 'brightness' in stats:
+                    avg_bright = stats['brightness'].get('mean', 0)
+                    st.markdown(f"""
+                    <div class="metric-card" style="border-left-color: {COLORS['warning']};">
+                        <div class="metric-value" style="color: {COLORS['warning']}; font-size: 2rem;">{avg_bright:.0f}</div>
+                        <div class="metric-label">Avg Brightness (K)</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            with stat_cols[3]:
+                if 'frp' in stats:
+                    total_frp = stats['frp'].get('total_MW', 0)
+                    st.markdown(f"""
+                    <div class="metric-card" style="border-left-color: {COLORS['chart_3']};">
+                        <div class="metric-value" style="color: {COLORS['chart_3']}; font-size: 2rem;">{total_frp:.0f}</div>
+                        <div class="metric-label">Total FRP (MW)</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            # Detection timeline graph
+            if len(fires) > 1:
+                st.markdown("####  Detection Timeline")
+                
+                # Process fire data for timeline
+                df_fires = fire_detector.get_fires_dataframe(st.session_state.fires_data)
+                if not df_fires.empty and 'acq_date' in df_fires.columns:
+                    # Group by date
+                    timeline_data = df_fires.groupby('acq_date').size().reset_index(name='count')
+                    timeline_data = timeline_data.sort_values('acq_date')
+                    
+                    # Create timeline chart
+                    fig_timeline = go.Figure()
+                    fig_timeline.add_trace(go.Bar(
+                        x=timeline_data['acq_date'],
+                        y=timeline_data['count'],
+                        marker=dict(
+                            color=COLORS['primary'],
+                            line=dict(color=COLORS['primary'], width=1)
+                        ),
+                        name='Fire Detections'
+                    ))
+                    
+                    fig_timeline.update_layout(
+                        height=250,
+                        margin=dict(l=0, r=0, t=0, b=0),
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        font=dict(family='Google Sans', size=12, color=COLORS['on_surface']),
+                        xaxis=dict(
+                            showgrid=False,
+                            title=dict(text='Detection Date', font=dict(size=11, weight=500))
+                        ),
+                        yaxis=dict(
+                            showgrid=True,
+                            gridcolor=COLORS['outline_variant'],
+                            gridwidth=1,
+                            title=dict(text='Number of Fires', font=dict(size=11, weight=500))
+                        ),
+                        hovermode='x'
+                    )
+                    
+                    st.plotly_chart(fig_timeline, width='stretch', config={'displayModeBar': False})
+        
         st.markdown('</div>', unsafe_allow_html=True)
 
-# ==================== TAB 2: RISK ASSESSMENT ====================
 with tab2:
     st.markdown('<div class="elevated-card animate-in">', unsafe_allow_html=True)
-    st.markdown('<h2 class="headline-medium">⚠️ Pre-Fire Risk Assessment</h2>', unsafe_allow_html=True)
-    st.markdown('<p class="body-large">Machine learning-powered fire risk prediction using 20+ environmental parameters</p>', unsafe_allow_html=True)
+    st.markdown('<h2 class="headline-medium"> Pre-Fire Risk Assessment</h2>', unsafe_allow_html=True)
+    st.markdown('<p class="body-large">Machine learning-powered fire risk prediction using 20+ environmental parameters from Weather API & Google Earth Engine</p>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
     
     col1, col2 = st.columns([2.5, 1], gap="large")
     
     with col1:
         st.markdown('<div class="elevated-card">', unsafe_allow_html=True)
-        st.markdown('<h3 class="title-large">📍 Select Analysis Location</h3>', unsafe_allow_html=True)
-        st.markdown('<p style="font-size: 0.9rem; color: #504349; margin-bottom: 1rem;">👆 Click anywhere on the map to select coordinates for risk assessment</p>', unsafe_allow_html=True)
+        st.markdown('<h3 class="title-large"> Select Analysis Location</h3>', unsafe_allow_html=True)
+        st.markdown('<p style="font-size: 0.9rem; color: #504349; margin-bottom: 1rem;"> Click anywhere on the map to select coordinates for risk assessment</p>', unsafe_allow_html=True)
         
-        # Create map
+        # Create map restricted to Nepal
         m2 = folium.Map(
-            location=[27.7, 85.3],
+            location=[28.3949, 84.1240],  # Center of Nepal
             zoom_start=7,
+            min_zoom=6,
+            max_bounds=True,
+            min_lat=26.0,
+            max_lat=31.0,
+            min_lon=80.0,
+            max_lon=89.0,
             tiles='CartoDB positron'
         )
         
@@ -687,15 +810,20 @@ with tab2:
                 icon=folium.Icon(color='blue', icon='crosshairs', prefix='fa')
             ).add_to(m2)
         
-        map_data = st_folium(m2, width=None, height=600, key="risk_map", use_container_width=True)
+        map_data = st_folium(m2, height=600, key="risk_map", width='stretch')
         
-        # Capture map click
+        # Capture map click with validation
         if map_data and map_data.get('last_clicked'):
             clicked_lat = map_data['last_clicked']['lat']
             clicked_lon = map_data['last_clicked']['lng']
-            st.session_state.selected_location = [clicked_lat, clicked_lon]
-            st.session_state.env_data = None
-            st.rerun()
+            
+            # Validate coordinates are within Nepal
+            if 26.0 <= clicked_lat <= 31.0 and 80.0 <= clicked_lon <= 89.0:
+                st.session_state.selected_location = [clicked_lat, clicked_lon]
+                st.session_state.env_data = None
+                st.rerun()
+            else:
+                st.warning("⚠️ Please select a location within Nepal boundaries.")
         
         st.markdown('</div>', unsafe_allow_html=True)
     
@@ -708,7 +836,7 @@ with tab2:
             # Location display
             st.markdown(f"""
             <div style="background: {COLORS['primary_container']}; padding: 1rem; border-radius: 16px; margin-bottom: 1.5rem;">
-                <div class="label-large" style="color: {COLORS['on_primary_container']}; margin-bottom: 0.5rem;">📍 Selected Coordinates</div>
+                <div class="label-large" style="color: {COLORS['on_primary_container']}; margin-bottom: 0.5rem;"> Selected Coordinates</div>
                 <div style="font-size: 1.1rem; font-weight: 600; color: {COLORS['primary']};">
                     {lat:.4f}° N, {lon:.4f}° E
                 </div>
@@ -716,165 +844,160 @@ with tab2:
             """, unsafe_allow_html=True)
             
             # Step 1: Fetch data
-            if st.button("📡 Fetch Environmental Data", type="primary", use_container_width=True):
-                with st.spinner("Collecting 20+ parameters from Weather API & Google Earth Engine..."):
+            if st.button(" Fetch Environmental Data", type="primary", width='stretch'):
+                with st.spinner(" Collecting real-time data from Weather API & Google Earth Engine..."):
                     try:
                         pre_fire = backend["pre_fire"]
                         features = pre_fire.feature_engineer.get_all_features(lat, lon)
                         
-                        st.session_state.env_data = {
-                            "latitude": lat,
-                            "longitude": lon,
-                            "date": datetime.now().strftime('%Y-%m-%d'),
-                            "features": features
-                        }
-                        st.success("✅ Data acquisition complete")
-                        st.rerun()
+                        if features and len(features) > 0:
+                            st.session_state.env_data = {
+                                "latitude": lat,
+                                "longitude": lon,
+                                "date": datetime.now().strftime('%Y-%m-%d'),
+                                "features": features
+                            }
+                            st.success(f" Successfully retrieved {len(features)} environmental parameters")
+                            st.rerun()
+                        else:
+                            st.error(" No data returned. Please verify API credentials and location validity.")
+                            
                     except Exception as e:
-                        st.error(f"❌ Error: {str(e)}")
+                        st.error(f" Data acquisition failed: {str(e)}")
+                        st.info(" Troubleshooting:\n- Verify Google Earth Engine authentication\n- Check Weather API credentials\n- Ensure coordinates are valid")
             
             # Display environmental data
             if st.session_state.env_data:
                 features = st.session_state.env_data['features']
                 
-                with st.expander("🌡️ Environmental Parameters", expanded=True):
-                    # Create scientific visualization
-                    st.markdown("#### Current Weather Conditions")
+                st.markdown("####  Current Weather Conditions")
+                
+                # Metrics grid
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    st.markdown(f"""
+                    <div class="metric-card">
+                        <div class="metric-value">{features.get('relative_humidity_pct', 0):.1f}<span class="metric-unit">%</span></div>
+                        <div class="metric-label">Relative Humidity</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col_b:
+                    st.markdown(f"""
+                    <div class="metric-card" style="border-left-color: {COLORS['secondary']};">
+                        <div class="metric-value" style="color: {COLORS['secondary']};">{features.get('vapor_pressure_deficit_kpa', 0):.2f}<span class="metric-unit">kPa</span></div>
+                        <div class="metric-label">VPD</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                col_c, col_d = st.columns(2)
+                with col_c:
+                    st.markdown(f"""
+                    <div class="metric-card" style="border-left-color: {COLORS['tertiary']};">
+                        <div class="metric-value" style="color: {COLORS['tertiary']};">{features.get('dewpoint_2m_celsius', 0):.1f}<span class="metric-unit">°C</span></div>
+                        <div class="metric-label">Dew Point</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col_d:
+                    st.markdown(f"""
+                    <div class="metric-card" style="border-left-color: {COLORS['chart_2']};">
+                        <div class="metric-value" style="color: {COLORS['chart_2']};">{features.get('clear_day_coverage', 0):.0f}<span class="metric-unit">%</span></div>
+                        <div class="metric-label">Clear Sky</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                # Fire Proximity Metric
+                col_e, col_f = st.columns(2)
+                with col_e:
+                    fire_count = features.get('fire_density_50km', 0)
                     
-                    # Metrics grid
-                    col_a, col_b = st.columns(2)
-                    with col_a:
-                        st.markdown(f"""
-                        <div class="metric-card">
-                            <div class="metric-value">{features.get('relative_humidity_pct', 0):.1f}<span class="metric-unit">%</span></div>
-                            <div class="metric-label">Relative Humidity</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    with col_b:
-                        st.markdown(f"""
-                        <div class="metric-card" style="border-left-color: {COLORS['secondary']};">
-                            <div class="metric-value" style="color: {COLORS['secondary']};">{features.get('vapor_pressure_deficit_kpa', 0):.2f}<span class="metric-unit">kPa</span></div>
-                            <div class="metric-label">VPD</div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                    # Determine color based on count
+                    fire_color = COLORS['low']
+                    if fire_count > 5: fire_color = COLORS['medium']
+                    if fire_count > 20: fire_color = COLORS['high']
                     
-                    col_c, col_d = st.columns(2)
-                    with col_c:
-                        st.markdown(f"""
-                        <div class="metric-card" style="border-left-color: {COLORS['tertiary']};">
-                            <div class="metric-value" style="color: {COLORS['tertiary']};">{features.get('dewpoint_2m_celsius', 0):.1f}<span class="metric-unit">°C</span></div>
-                            <div class="metric-label">Dew Point</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    with col_d:
-                        st.markdown(f"""
-                        <div class="metric-card" style="border-left-color: {COLORS['chart_2']};">
-                            <div class="metric-value" style="color: {COLORS['chart_2']};">{features.get('clear_day_coverage', 0):.0f}<span class="metric-unit">%</span></div>
-                            <div class="metric-label">Clear Sky</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    
-                    # Fire Proximity Metric
-                    col_e, col_f = st.columns(2)
-                    with col_e:
-                        fire_count = features.get('fire_density_50km', 0)
-                        
-                        # Determine color based on count
-                        fire_color = COLORS['low']
-                        if fire_count > 5: fire_color = COLORS['medium']
-                        if fire_count > 20: fire_color = COLORS['high']
-                        
-                        st.markdown(f"""
-                        <div class="metric-card" style="border-left-color: {fire_color};">
-                            <div class="metric-value" style="font-size: 2rem; color: {fire_color};">{fire_count}</div>
-                            <div class="metric-label">Active Fires (50km)</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    
-                    # Historical trends chart
-                    st.markdown("#### Historical Trends (Past 7 Days)")
-                    
-                    # Create Plotly chart for humidity lag
-                    lag_data = {
-                        'Day': ['7d ago', '3d ago', '1d ago', 'Today'],
-                        'Humidity (%)': [
-                            features.get('relative_humidity_pct_lag7', 0),
-                            features.get('relative_humidity_pct_lag3', 0),
-                            features.get('relative_humidity_pct_lag1', 0),
-                            features.get('relative_humidity_pct', 0)
-                        ]
-                    }
-                    
-                    fig = go.Figure()
-                    fig.add_trace(go.Scatter(
-                        x=lag_data['Day'],
-                        y=lag_data['Humidity (%)'],
-                        mode='lines+markers',
-                        name='Relative Humidity',
-                        line=dict(color=COLORS['primary'], width=3),
-                        marker=dict(size=10, color=COLORS['primary'], line=dict(width=2, color='white'))
-                    ))
-                    
-                    fig.update_layout(
-                        height=250,
-                        margin=dict(l=0, r=0, t=0, b=0),
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        plot_bgcolor='rgba(0,0,0,0)',
-                        font=dict(family='Google Sans', size=12, color=COLORS['on_surface']),
-                        xaxis=dict(
-                            showgrid=True,
-                            gridcolor=COLORS['outline_variant'],
-                            gridwidth=1,
-                            title=dict(text='Time Period', font=dict(size=11, weight=500))
-                        ),
-                        yaxis=dict(
-                            showgrid=True,
-                            gridcolor=COLORS['outline_variant'],
-                            gridwidth=1,
-                            title=dict(text='Humidity (%)', font=dict(size=11, weight=500)),
-                            range=[0, 100]
-                        ),
-                        hovermode='x unified'
-                    )
-                    
-                    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-                    
-                    # Satellite data
-                    st.markdown("#### Satellite Observations")
-                    col_e, col_f = st.columns(2)
-                    with col_e:
-                        st.markdown(f"""
-                        <div class="metric-card" style="border-left-color: {COLORS['success']};">
-                            <div class="metric-value" style="color: {COLORS['success']};">{features.get('landsat_savi', 0):.3f}</div>
-                            <div class="metric-label">SAVI Index</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    with col_f:
-                        st.markdown(f"""
-                        <div class="metric-card" style="border-left-color: {COLORS['error']};">
-                            <div class="metric-value" style="color: {COLORS['error']};">{features.get('lst_day_c', 0):.1f}<span class="metric-unit">°C</span></div>
-                            <div class="metric-label">LST (Day)</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    
-                    # Show ALL parameters in a table
-                    st.markdown("#### Complete Parameter List")
-                    with st.expander("📄 View All Model Inputs", expanded=False):
-                        # Convert features to a readable dataframe
-                        params_df = pd.DataFrame(list(features.items()), columns=['Parameter', 'Value'])
-                        # Format values (round floats)
-                        params_df['Value'] = params_df['Value'].apply(lambda x: f"{x:.4f}" if isinstance(x, float) else x)
-                        st.dataframe(params_df, use_container_width=True, hide_index=True)
+                    st.markdown(f"""
+                    <div class="metric-card" style="border-left-color: {fire_color};">
+                        <div class="metric-value" style="font-size: 2rem; color: {fire_color};">{fire_count}</div>
+                        <div class="metric-label">Active Fires (50km)</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                # Historical trends chart
+                st.markdown("####  Historical Trends (Past 7 Days)")
+                
+                # Create Plotly chart for humidity lag
+                lag_data = {
+                    'Day': ['7d ago', '3d ago', '1d ago', 'Today'],
+                    'Humidity (%)': [
+                        features.get('relative_humidity_pct_lag7', 0),
+                        features.get('relative_humidity_pct_lag3', 0),
+                        features.get('relative_humidity_pct_lag1', 0),
+                        features.get('relative_humidity_pct', 0)
+                    ]
+                }
+                
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=lag_data['Day'],
+                    y=lag_data['Humidity (%)'],
+                    mode='lines+markers',
+                    name='Relative Humidity',
+                    line=dict(color=COLORS['primary'], width=3),
+                    marker=dict(size=10, color=COLORS['primary'], line=dict(width=2, color='white'))
+                ))
+                
+                fig.update_layout(
+                    height=250,
+                    margin=dict(l=0, r=0, t=0, b=0),
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(family='Google Sans', size=12, color=COLORS['on_surface']),
+                    xaxis=dict(
+                        showgrid=True,
+                        gridcolor=COLORS['outline_variant'],
+                        gridwidth=1,
+                        title=dict(text='Time Period', font=dict(size=11, weight=500))
+                    ),
+                    yaxis=dict(
+                        showgrid=True,
+                        gridcolor=COLORS['outline_variant'],
+                        gridwidth=1,
+                        title=dict(text='Humidity (%)', font=dict(size=11, weight=500)),
+                        range=[0, 100]
+                    ),
+                    hovermode='x unified'
+                )
+                
+                st.plotly_chart(fig, width='stretch', config={'displayModeBar': False})
+                
+                # Satellite data
+                st.markdown("####  Satellite Observations")
+                col_g, col_h = st.columns(2)
+                with col_g:
+                    st.markdown(f"""
+                    <div class="metric-card" style="border-left-color: {COLORS['success']};">
+                        <div class="metric-value" style="color: {COLORS['success']};">{features.get('landsat_savi', 0):.3f}</div>
+                        <div class="metric-label">SAVI Index</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col_h:
+                    st.markdown(f"""
+                    <div class="metric-card" style="border-left-color: {COLORS['error']};">
+                        <div class="metric-value" style="color: {COLORS['error']};">{features.get('lst_day_c', 0):.1f}<span class="metric-unit">°C</span></div>
+                        <div class="metric-label">LST (Day)</div>
+                    </div>
+                    """, unsafe_allow_html=True)
                 
                 # Step 2: Risk assessment
-                if st.button("⚠️ Assess Fire Risk", type="primary", use_container_width=True):
-                    with st.spinner("Running CatBoost ML model..."):
+                if st.button(" Assess Fire Risk", type="primary", width='stretch'):
+                    with st.spinner(" Running CatBoost ML model for risk prediction..."):
                         try:
                             pre_fire = backend["pre_fire"]
                             result = pre_fire.predict_from_features(features)
                             
                             if "error" in result:
-                                st.error(f"❌ Model error: {result['error']}")
+                                st.error(f" Model error: {result['error']}")
+                                st.info(" Ensure the ML model is properly trained and feature names match.")
                             else:
                                 prob = result['probability']
                                 level = result['risk_level']
@@ -894,7 +1017,7 @@ with tab2:
                                             margin: 1rem 0;">
                                     <div style="font-size: 0.85rem; font-weight: 600; color: {risk_color}; 
                                                 text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem;">
-                                        Risk Assessment
+                                         Risk Assessment
                                     </div>
                                     <div style="font-size: 2rem; font-weight: 700; color: {risk_color}; margin-bottom: 0.25rem;">
                                         {level.upper()}
@@ -904,7 +1027,7 @@ with tab2:
                                     </div>
                                     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid {risk_color}30;">
                                         <span class="status-chip chip-{level.lower()}" style="border-left-color: {risk_color};">
-                                            🚨 Alert Level: {alert.upper()}
+                                             Alert Level: {alert.upper()}
                                         </span>
                                     </div>
                                 </div>
@@ -943,18 +1066,18 @@ with tab2:
                                     font=dict(family='Google Sans', color=COLORS['on_surface'])
                                 )
                                 
-                                st.plotly_chart(fig_gauge, use_container_width=True, config={'displayModeBar': False})
+                                st.plotly_chart(fig_gauge, width='stretch', config={'displayModeBar': False})
                                 
                                 # Recommendations
-                                st.markdown("#### 📋 Recommended Actions")
+                                st.markdown("####  Recommended Actions")
                                 if alert == "Critical":
                                     st.markdown(f"""
                                     <div class="material-card" style="background: {COLORS['error']}10; border-left: 4px solid {COLORS['error']};">
                                         <ul style="margin: 0; padding-left: 1.5rem; color: {COLORS['on_surface']};">
-                                            <li style="margin: 0.5rem 0;"><strong>Immediate mobilization recommended</strong></li>
-                                            <li style="margin: 0.5rem 0;">Alert local response teams</li>
-                                            <li style="margin: 0.5rem 0;">Monitor satellite feeds continuously</li>
-                                            <li style="margin: 0.5rem 0;">Prepare evacuation plans</li>
+                                            <li style="margin: 0.5rem 0;"><strong> Immediate mobilization recommended</strong></li>
+                                            <li style="margin: 0.5rem 0;"> Alert local response teams</li>
+                                            <li style="margin: 0.5rem 0;"> Monitor satellite feeds continuously</li>
+                                            <li style="margin: 0.5rem 0;"> Prepare evacuation plans</li>
                                         </ul>
                                     </div>
                                     """, unsafe_allow_html=True)
@@ -962,9 +1085,9 @@ with tab2:
                                     st.markdown(f"""
                                     <div class="material-card" style="background: {COLORS['warning']}10; border-left: 4px solid {COLORS['warning']};">
                                         <ul style="margin: 0; padding-left: 1.5rem; color: {COLORS['on_surface']};">
-                                            <li style="margin: 0.5rem 0;">Prepare fire suppression resources</li>
-                                            <li style="margin: 0.5rem 0;">Increase monitoring frequency</li>
-                                            <li style="margin: 0.5rem 0;">Issue public awareness warnings</li>
+                                            <li style="margin: 0.5rem 0;"> Prepare fire suppression resources</li>
+                                            <li style="margin: 0.5rem 0;"> Increase monitoring frequency</li>
+                                            <li style="margin: 0.5rem 0;"> Issue public awareness warnings</li>
                                         </ul>
                                     </div>
                                     """, unsafe_allow_html=True)
@@ -972,8 +1095,8 @@ with tab2:
                                     st.markdown(f"""
                                     <div class="material-card" style="background: {COLORS['info']}10; border-left: 4px solid {COLORS['info']};">
                                         <ul style="margin: 0; padding-left: 1.5rem; color: {COLORS['on_surface']};">
-                                            <li style="margin: 0.5rem 0;">Monitor weather changes closely</li>
-                                            <li style="margin: 0.5rem 0;">Verify with local ground observations</li>
+                                            <li style="margin: 0.5rem 0;"> Monitor weather changes closely</li>
+                                            <li style="margin: 0.5rem 0;">  Verify with local ground observations</li>
                                         </ul>
                                     </div>
                                     """, unsafe_allow_html=True)
@@ -981,18 +1104,29 @@ with tab2:
                                     st.markdown(f"""
                                     <div class="material-card" style="background: {COLORS['success']}10; border-left: 4px solid {COLORS['success']};">
                                         <p style="margin: 0; color: {COLORS['on_surface']};">
-                                            ✓ Routine monitoring sufficient<br>
-                                            ✓ No immediate threat detected
+                                             Routine monitoring sufficient<br>
+                                             No immediate threat detected
                                         </p>
                                     </div>
                                     """, unsafe_allow_html=True)
                                 
+                                # Show ALL parameters after assessment
+                                st.markdown("---")
+                                with st.expander(" View Complete Parameter List", expanded=False):
+                                    st.markdown("##### All Model Input Features (From Real APIs)")
+                                    # Convert features to a readable dataframe
+                                    params_df = pd.DataFrame(list(features.items()), columns=['Parameter', 'Value'])
+                                    # Format values (round floats)
+                                    params_df['Value'] = params_df['Value'].apply(lambda x: f"{x:.4f}" if isinstance(x, float) else x)
+                                    st.dataframe(params_df, width='stretch', hide_index=True)
+                                
                         except Exception as e:
-                            st.error(f"❌ Analysis failed: {str(e)}")
+                            st.error(f" Analysis failed: {str(e)}")
+                            st.info(" Ensure ML model is loaded and feature names match the training data.")
         else:
             st.markdown(f"""
             <div class="material-card" style="text-align: center; padding: 2rem;">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">📍</div>
+                <div style="font-size: 3rem; margin-bottom: 1rem;"></div>
                 <p style="color: {COLORS['on_surface_variant']}; margin: 0;">
                     Click on the map to select a location for risk assessment
                 </p>
@@ -1000,233 +1134,3 @@ with tab2:
             """, unsafe_allow_html=True)
         
         st.markdown('</div>', unsafe_allow_html=True)
-
-# ==================== TAB 3: SPREAD PREDICTION ====================
-with tab3:
-    st.markdown('<div class="elevated-card animate-in">', unsafe_allow_html=True)
-    st.markdown('<h2 class="headline-medium">📊 Post-Fire Spread Prediction</h2>', unsafe_allow_html=True)
-    st.markdown('<p class="body-large">Physics-based fire spread modeling with environmental parameters</p>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Initialize spread state
-    if 'fire_location' not in st.session_state:
-        st.session_state.fire_location = None
-    if 'show_spread' not in st.session_state:
-        st.session_state.show_spread = False
-    
-    col1, col2 = st.columns([2.5, 1], gap="large")
-    
-    with col1:
-        st.markdown('<div class="elevated-card">', unsafe_allow_html=True)
-        st.markdown('<h3 class="title-large">📍 Fire Spread Modeling</h3>', unsafe_allow_html=True)
-        st.markdown('<p style="font-size: 0.9rem; color: #504349; margin-bottom: 1rem;">👆 Click to mark active fire location</p>', unsafe_allow_html=True)
-        
-        fire_loc = st.session_state.fire_location or [27.7, 85.3]
-        m3 = folium.Map(
-            location=fire_loc,
-            zoom_start=9,
-            tiles='CartoDB positron'
-        )
-        
-        # Add fire marker
-        if st.session_state.fire_location:
-            folium.Marker(
-                location=st.session_state.fire_location,
-                popup="Active Fire",
-                icon=folium.Icon(color='red', icon='fire', prefix='fa')
-            ).add_to(m3)
-        
-        # Show spread zones if predicted
-        if st.session_state.show_spread and 'spread_params' in st.session_state:
-            params = st.session_state.spread_params
-            fire_lat, fire_lon = st.session_state.fire_location
-            
-            wind_offset = {
-                'N': (0.02, 0), 'NE': (0.015, 0.015), 'E': (0, 0.02), 'SE': (-0.015, 0.015),
-                'S': (-0.02, 0), 'SW': (-0.015, -0.015), 'W': (0, -0.02), 'NW': (0.015, -0.015)
-            }
-            
-            offset_lat, offset_lon = wind_offset.get(params['wind_dir'], (0, 0))
-            speed_factor = params['wind_speed'] / 15.0
-            
-            # 6-hour zone
-            folium.Circle(
-                location=[fire_lat + offset_lat * 0.3 * speed_factor, 
-                         fire_lon + offset_lon * 0.3 * speed_factor],
-                radius=1500 * speed_factor,
-                color='#D32F2F',
-                fill=True,
-                fillColor='#EF5350',
-                fillOpacity=0.5,
-                weight=2,
-                popup="<b>6-Hour Spread Zone</b><br>High probability area"
-            ).add_to(m3)
-            
-            # 12-hour zone
-            folium.Circle(
-                location=[fire_lat + offset_lat * 0.5 * speed_factor, 
-                         fire_lon + offset_lon * 0.5 * speed_factor],
-                radius=3000 * speed_factor,
-                color='#F57C00',
-                fill=True,
-                fillColor='#FFB74D',
-                fillOpacity=0.4,
-                weight=2,
-                popup="<b>12-Hour Spread Zone</b><br>Medium probability area"
-            ).add_to(m3)
-            
-            # 24-hour zone
-            folium.Circle(
-                location=[fire_lat + offset_lat * 0.7 * speed_factor, 
-                         fire_lon + offset_lon * 0.7 * speed_factor],
-                radius=5000 * speed_factor,
-                color='#FFA000',
-                fill=True,
-                fillColor='#FFD54F',
-                fillOpacity=0.3,
-                weight=2,
-                popup="<b>24-Hour Spread Zone</b><br>Low probability area"
-            ).add_to(m3)
-        
-        map_data3 = st_folium(m3, width=None, height=600, key="spread_map", use_container_width=True)
-        
-        if map_data3 and map_data3.get('last_clicked'):
-            st.session_state.fire_location = [
-                map_data3['last_clicked']['lat'],
-                map_data3['last_clicked']['lng']
-            ]
-            st.session_state.show_spread = False
-            st.rerun()
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown('<div class="material-card">', unsafe_allow_html=True)
-        
-        if st.session_state.fire_location:
-            lat, lon = st.session_state.fire_location
-            
-            st.markdown(f"""
-            <div style="background: {COLORS['error']}20; padding: 1rem; border-radius: 16px; margin-bottom: 1.5rem; border-left: 4px solid {COLORS['error']};">
-                <div class="label-large" style="color: {COLORS['error']}; margin-bottom: 0.5rem;">🔥 Fire Location</div>
-                <div style="font-size: 1.1rem; font-weight: 600; color: {COLORS['on_surface']};">
-                    {lat:.4f}° N, {lon:.4f}° E
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            if st.button("📡 Fetch Environmental Data", type="secondary", use_container_width=True):
-                with st.spinner("Loading conditions..."):
-                    try:
-                        gee = backend["gee"]
-                        data = gee.get_environmental_data(lat, lon)
-                        st.session_state.fire_env_data = data
-                        st.success("✅ Data loaded")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Error: {str(e)}")
-            
-            if 'fire_env_data' in st.session_state:
-                data = st.session_state.fire_env_data
-                
-                st.markdown("#### Current Environmental Conditions")
-                
-                # Metrics
-                col_a, col_b = st.columns(2)
-                with col_a:
-                    st.markdown(f"""
-                    <div class="metric-card">
-                        <div class="metric-value">{data['temp_max']:.1f}<span class="metric-unit">°C</span></div>
-                        <div class="metric-label">Temperature</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with col_b:
-                    st.markdown(f"""
-                    <div class="metric-card" style="border-left-color: {COLORS['info']};">
-                        <div class="metric-value" style="color: {COLORS['info']};">{data['humidity']:.0f}<span class="metric-unit">%</span></div>
-                        <div class="metric-label">Humidity</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                col_c, col_d = st.columns(2)
-                with col_c:
-                    st.markdown(f"""
-                    <div class="metric-card" style="border-left-color: {COLORS['tertiary']};">
-                        <div class="metric-value" style="color: {COLORS['tertiary']};">{data['wind_speed']:.1f}<span class="metric-unit">km/h</span></div>
-                        <div class="metric-label">Wind Speed</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with col_d:
-                    st.markdown(f"""
-                    <div class="metric-card" style="border-left-color: {COLORS['success']};">
-                        <div class="metric-value" style="color: {COLORS['success']};">{data['vegetation']:.3f}</div>
-                        <div class="metric-label">NDVI</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                st.markdown("---")
-                
-                if st.button("📊 Predict Fire Spread", type="primary", use_container_width=True):
-                    st.session_state.show_spread = True
-                    st.session_state.spread_params = {
-                        'wind_speed': data['wind_speed'],
-                        'wind_dir': 'NE'
-                    }
-                    
-                    # Spread predictions
-                    st.markdown(f"""
-                    <div style="background: {COLORS['warning']}10; padding: 1.5rem; border-radius: 20px; 
-                                border-left: 4px solid {COLORS['warning']}; margin-top: 1rem;">
-                        <div class="label-large" style="color: {COLORS['warning']}; margin-bottom: 1rem;">
-                            🔥 Spread Forecast (24h)
-                        </div>
-                        <div style="margin: 0.75rem 0;">
-                            <div style="font-size: 0.875rem; color: {COLORS['on_surface_variant']}; margin-bottom: 0.25rem;">
-                                Predicted Area
-                            </div>
-                            <div style="font-size: 1.5rem; font-weight: 600; color: {COLORS['warning']};">
-                                15.2 km²
-                            </div>
-                        </div>
-                        <div style="margin: 0.75rem 0;">
-                            <div style="font-size: 0.875rem; color: {COLORS['on_surface_variant']}; margin-bottom: 0.25rem;">
-                                Spread Rate
-                            </div>
-                            <div style="font-size: 1.5rem; font-weight: 600; color: {COLORS['error']};">
-                                2.3 km/h
-                            </div>
-                        </div>
-                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid {COLORS['warning']}30;">
-                            <div style="font-size: 0.85rem; color: {COLORS['on_surface']};">
-                                ⚠️ Spread direction: Northeast (wind-driven)
-                            </div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    st.rerun()
-        else:
-            st.markdown(f"""
-            <div class="material-card" style="text-align: center; padding: 2rem;">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">🔥</div>
-                <p style="color: {COLORS['on_surface_variant']}; margin: 0;">
-                    Click on the map to mark the fire location
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-
-# ============================================================================
-# FOOTER
-# ============================================================================
-
-st.markdown("---")
-st.markdown(f"""
-<div style="text-align: center; padding: 2rem 0 1rem 0;">
-    <p style="font-size: 0.85rem; color: {COLORS['on_surface_variant']}; margin: 0;">
-        Powered by Material 3 Expressive Design System • Built with Streamlit<br>
-        © 2026 Wildfire Intelligence Platform • Scientific-grade predictions with 20+ parameters
-    </p>
-</div>
-""", unsafe_allow_html=True)

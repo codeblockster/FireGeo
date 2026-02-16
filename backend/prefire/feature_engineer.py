@@ -37,8 +37,7 @@ class FeatureEngineer:
         try:
             if date is None:
                 date = datetime.now().strftime('%Y-%m-%d')
-            
-            # ===== 1. WEATHER DATA (Current + Historical 30 days) =====
+
             current = self.weather_api.fetch_current_weather(lat, lon)
             hist_data = self.weather_api.get_historical_weather(lat, lon, days_back=30)
             
@@ -70,8 +69,7 @@ class FeatureEngineer:
                     return float(np.sum(data_list[-window:]))
                 except Exception:
                     return default
-            
-            # ===== CURRENT WEATHER FEATURES =====
+
             features['dewpoint_2m_celsius'] = current.get('dewpoint', 15.0)
             features['relative_humidity_pct'] = current.get('humidity', 50.0)
             features['clear_day_coverage'] = max(0, 100 - current.get('cloud_cover', 20.0))
@@ -88,13 +86,11 @@ class FeatureEngineer:
             
             # Skin temperature and soil
             features['skin_temperature_celsius'] = current.get('skin_temp', 25.0)
-            features['soil_temperature_celsius'] = current.get('soil_temp', 20.0)
             features['soil_moisture_m3m3'] = current.get('soil_moisture', 0.3)
             
             # Precipitation
             features['precipitation_mm'] = current.get('precip', 0.0)
-            
-            # ===== TEMPERATURE FEATURES (Lags + Rolling Means) =====
+
             temps = hist_data.get('temp_mean', [])
             skin_temps = hist_data.get('skin_temp', [])
             soil_temps = hist_data.get('soil_temp', [])
@@ -112,21 +108,18 @@ class FeatureEngineer:
             features['soil_temperature_celsius_lag1'] = get_lag(soil_temps, 1, 20.0)
             features['soil_temperature_celsius_lag3'] = get_lag(soil_temps, 3, 20.0)
             features['soil_temperature_celsius_lag7'] = get_lag(soil_temps, 7, 20.0)
-            
-            # ===== SOIL MOISTURE FEATURES (Lags) =====
+
             soil_moisture = hist_data.get('soil_moisture', [])
             features['soil_moisture_m3m3_lag1'] = get_lag(soil_moisture, 1, 0.3)
             features['soil_moisture_m3m3_lag3'] = get_lag(soil_moisture, 3, 0.3)
             features['soil_moisture_m3m3_lag7'] = get_lag(soil_moisture, 7, 0.3)
             features['soil_moisture_m3m3_lag14'] = get_lag(soil_moisture, 14, 0.3)
-            
-            # ===== HUMIDITY FEATURES (Lags) =====
+
             hums = hist_data.get('humidity', [])
             features['relative_humidity_pct_lag1'] = get_lag(hums, 1, 50.0)
             features['relative_humidity_pct_lag3'] = get_lag(hums, 3, 50.0)
             features['relative_humidity_pct_lag7'] = get_lag(hums, 7, 50.0)
-            
-            # ===== PRECIPITATION FEATURES (Lags + Rolling Sums) =====
+
             precips = hist_data.get('precip', [])
             features['precipitation_mm_lag1'] = get_lag(precips, 1, 0.0)
             features['precipitation_mm_lag5'] = get_lag(precips, 5, 0.0)
@@ -135,8 +128,7 @@ class FeatureEngineer:
             features['precipitation_mm_roll7_sum'] = get_rolling_sum(precips, 7, 0.0)
             features['precipitation_mm_roll14_sum'] = get_rolling_sum(precips, 14, 0.0)
             features['precipitation_mm_roll30_sum'] = get_rolling_sum(precips, 30, 0.0)
-            
-            # ===== VPD FEATURES (Lags + Rolling Means) =====
+
             vpds = hist_data.get('vpd', [])
             features['vapor_pressure_deficit_kpa_lag1'] = get_lag(vpds, 1, 1.0)
             features['vapor_pressure_deficit_kpa_lag3'] = get_lag(vpds, 3, 1.0)
@@ -144,8 +136,7 @@ class FeatureEngineer:
             features['vapor_pressure_deficit_kpa_lag14'] = get_lag(vpds, 14, 1.0)
             features['vapor_pressure_deficit_kpa_roll7_mean'] = get_rolling_mean(vpds, 7, 1.0)
             features['vapor_pressure_deficit_kpa_roll14_mean'] = get_rolling_mean(vpds, 14, 1.0)
-            
-            # ===== GEE DATA (Terrain, Vegetation, LST) =====
+
             if EE_AVAILABLE and not self.gee_client.is_mock_mode:
                 point = ee.Geometry.Point([lon, lat])
                 
@@ -274,7 +265,6 @@ class FeatureEngineer:
             'u_wind_component_ms': 0.0,
             'v_wind_component_ms': 0.0,
             'skin_temperature_celsius': 25.0,
-            'soil_temperature_celsius': 20.0,
             'soil_moisture_m3m3': 0.3,
             'precipitation_mm': 0.0,
             

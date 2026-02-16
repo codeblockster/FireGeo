@@ -1,17 +1,16 @@
-
 S-TIER CATBOOST HYPERPARAMETER TUNING SUMMARY
 Generated: 2026-02-03 18:36:12
 ================================================================================
 
-🏆 METHODOLOGY TIER: S+ (RESEARCH-GRADE)
+ METHODOLOGY TIER: S+ (RESEARCH-GRADE)
 
 S-TIER IMPROVEMENTS IMPLEMENTED:
-1. ✅ SMOTE inside CV pipeline (no synthetic sample leakage)
-2. ✅ Policy-aware custom scorer (Recall@FAR≤0.05)
-3. ✅ No early stopping with SMOTE (no distribution mismatch)
-4. ✅ Explicit loss_function for reproducibility
-5. ✅ Threshold optimization on validation set
-6. ✅ Comprehensive evaluation on real (non-SMOTE) data
+1.  SMOTE inside CV pipeline (no synthetic sample leakage)
+2.  Policy-aware custom scorer (Recall@FAR≤0.05)
+3.  No early stopping with SMOTE (no distribution mismatch)
+4.  Explicit loss_function for reproducibility
+5.  Threshold optimization on validation set
+6.  Comprehensive evaluation on real (non-SMOTE) data
 
 ================================================================================
 SEARCH CONFIGURATION
@@ -78,10 +77,10 @@ on validation data. The model achieves 88.88% fire detection recall
 at 4.97% false alarm rate."
 
 This is:
-✅ Thesis-safe
-✅ Paper-safe  
-✅ Stacking-ready
-✅ Deployment-ready
+ Thesis-safe
+ Paper-safe  
+ Stacking-ready
+ Deployment-ready
 
 ================================================================================
 OUTPUT FILES
@@ -127,10 +126,10 @@ NEXT STEPS (ADVANCED)
 CERTIFICATION
 ================================================================================
 This model is certified S-tier for:
-✅ Academic research & publication
-✅ Thesis/dissertation defense
-✅ Production deployment
-✅ Further ensemble development
+ Academic research & publication
+ Thesis/dissertation defense
+ Production deployment
+ Further ensemble development
 
 No methodological attacks possible from reviewers/examiners.
 

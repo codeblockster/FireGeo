@@ -1,16 +1,15 @@
-# Wildfire Management System 🔥
+# Wildfire Detection and Risk Assessment - Professional Edition
 
-> A comprehensive system for wildfire risk assessment, detection, and spread prediction using machine learning and satellite data, integrated into a single Streamlit dashboard.
+> A professional-grade system for real-time wildfire monitoring and risk assessment using integrated satellite data and machine learning.
 
-## 🌟 Features
+## Professional Features
 
-- **🔍 Active Fire Detection** - Real-time monitoring using NASA FIRMS satellite data (VIIRS/MODIS) with **Global Earth Engine Integration**
-- **⚠️ Pre-Fire Risk Assessment** - Advanced **CatBoost** model using **81 environmental features** (Weather, Terrain, Vegetation, **Active Fire Density**)
-- **📊 Post-Fire Spread Prediction** - U-Net deep learning model for spatial fire spread forecasting
-- **🗺️ Interactive Dashboard** - Streamlit web interface with **Global Map Capabilities**
-- **🌍 Environmental Data Integration** - Automated fetching from **Google Earth Engine** and **Open-Meteo Weather API**
+- **Real-Time API Integration** - Integrated with NASA FIRMS for active fire detection and Open-Meteo for live weather monitoring.
+- **Advanced Predictive Modeling** - Powered by a tuned CatBoost engine utilizing 20+ environmental parameters for precise risk assessment.
+- **Scientific Precision** - High-resolution data integration from Google Earth Engine, including terrain analysis and vegetation indices.
+- **Expressive Dashboard** - Modern material-design interface optimized for professional monitoring and rapid response.
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 - Python 3.11+
@@ -59,44 +58,44 @@ streamlit run frontend/app.py --server.port 8501
 ```
 
 **Access the Application:**
-- 🌐 **Dashboard**: http://localhost:8501
+-  **Dashboard**: http://localhost:8501
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 f:\v4 cleanup\
-├── backend/                      # All Backend Code and Data
-│   ├── src/                      # Application Source Code
-│   │   ├── analysis/            # Analysis modules
-│   │   │   ├── pre_fire.py     # CatBoost Risk Analyzer
-│   │   │   ├── post_fire.py    # Post-fire burn severity (dNBR)
-│   │   │   └── spread_prediction.py # Fire spread forecasting
-│   │   ├── data_collection/     # Data collection modules
-│   │   │   ├── gee_extractor.py    # GEE: Terrain, LST, SAVI
-│   │   │   ├── weather_api.py      # Weather: Current, History, Rolling Stats
-│   │   │   ├── nasa_firms.py       # NASA FIRMS fire data
-│   │   │   └── sentinel_manager.py # Sentinel-2 imagery
-│   │   ├── models/              # Model classes
-│   │   │   ├── catboost_deployment_tuned.py # CatBoost Predictor Class
-│   │   │   └── unet_fire.py    # U-Net architecture
-│   │   ├── utils/
-│   │   │   ├── feature_engineering.py # Feature Orchestrator (81 features)
-│   │   │   └── calculations.py # Math helpers (VPD, etc.)
-│   │   ├── preprocessing/
-│   │   └── training/
-│   ├── data/                    # Data Storage
-│   │   └── models/              # Trained model files
-│   ├── config.py                # Central Configuration
-│   ├── prefire/                 # Pre-fire specific modules
-│   ├── postfire/                # Post-fire specific modules
-│   └── firedetect/              # Fire detection modules
-├── frontend/                     # Streamlit Dashboard
-│   └── app.py                   # Main dashboard application
-├── requirements.txt             # Python dependencies
-└── README.md                    # This file
+ backend/                      # All Backend Code and Data
+    src/                      # Application Source Code
+       analysis/            # Analysis modules
+          pre_fire.py     # CatBoost Risk Analyzer
+          post_fire.py    # Post-fire burn severity (dNBR)
+          spread_prediction.py # Fire spread forecasting
+       data_collection/     # Data collection modules
+          gee_extractor.py    # GEE: Terrain, LST, SAVI
+          weather_api.py      # Weather: Current, History, Rolling Stats
+          nasa_firms.py       # NASA FIRMS fire data
+          sentinel_manager.py # Sentinel-2 imagery
+       models/              # Model classes
+          catboost_deployment_tuned.py # CatBoost Predictor Class
+          unet_fire.py    # U-Net architecture
+       utils/
+          feature_engineering.py # Feature Orchestrator (81 features)
+          calculations.py # Math helpers (VPD, etc.)
+       preprocessing/
+       training/
+    data/                    # Data Storage
+       models/              # Trained model files
+    config.py                # Central Configuration
+    prefire/                 # Pre-fire specific modules
+    postfire/                # Post-fire specific modules
+    firedetect/              # Fire detection modules
+ frontend/                     # Streamlit Dashboard
+    app.py                   # Main dashboard application
+ requirements.txt             # Python dependencies
+ README.md                    # This file
 ```
 
-## 🔧 Configuration
+##  Configuration
 
 ### Environment Variables (`.env`)
 ```env
@@ -111,7 +110,7 @@ NASA_FIRMS_API_KEY=your_api_key
 WEATHER_API_KEY=your_openweather_key
 ```
 
-## 🔍 Troubleshooting
+##  Troubleshooting
 
 ### Models Not Loading
 - System runs in MOCK mode when models are not present
@@ -119,7 +118,7 @@ WEATHER_API_KEY=your_openweather_key
   - `catboost_s_tier_model.pkl` (or `model.cbm`)
   - Associated JSON configurations (`optimal_threshold_info.json`, etc.)
 
-## 📚 Documentation
+##  Documentation
 
 ### Module Overview
 
@@ -144,7 +143,7 @@ WEATHER_API_KEY=your_openweather_key
 5. **Analyzer** passes data to `CatBoostPredictor`.
 6. **Model** returns probability and risk level.
 
-## 🐛 Debugging and Testing
+##  Debugging and Testing
 
 ### 1. Integration Tests
 We have included a full system integration test to verify the pipeline from data collection to prediction.
@@ -157,7 +156,7 @@ python tests/test_simple.py
 **Expected Output:**
 - `[1/3] Testing Feature Engineering...`: Should print fetched features.
 - `[2/3] Testing Pre-Fire Analyzer...`: Should print risk probability and level.
-- `✅ SYSTEM INTEGRATION TEST PASSED`
+- ` SYSTEM INTEGRATION TEST PASSED`
 
 ### 2. Mock Mode
 If external APIs (GEE, Weather) or Model files are missing, the system automatically falls back to **Mock Mode**.
@@ -169,7 +168,7 @@ If external APIs (GEE, Weather) or Model files are missing, the system automatic
 - **Weather API Error**: Verify your API key in `.env`.
 - **Model Loading Failed**: Ensure `catboost_s_tier_model.pkl` is in `src/models/` or the configured directory.
 
-## 📄 License
+##  License
 
 This project is for educational and research purposes.
 

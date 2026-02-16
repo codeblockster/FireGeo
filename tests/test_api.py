@@ -20,37 +20,29 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-
-# ============================================================================
 # TEST: Environment Variables
-# ============================================================================
 
 def test_env_file_exists():
     """Test that .env file exists"""
     env_path = project_root / '.env'
     assert env_path.exists(), f".env file not found at {env_path}"
-    logger.info(f"✓ .env file found at: {env_path}")
-
+    logger.info(f" .env file found at: {env_path}")
 
 def test_weather_api_key_exists():
     """Test that WEATHER_API_KEY is set"""
     weather_key = os.getenv('WEATHER_API_KEY')
     assert weather_key is not None, "WEATHER_API_KEY not found in environment"
     assert weather_key != 'your_weather_api_key_here', "WEATHER_API_KEY is still placeholder"
-    logger.info(f"✓ WEATHER_API_KEY found: {weather_key[:8]}...")
-
+    logger.info(f" WEATHER_API_KEY found: {weather_key[:8]}...")
 
 def test_nasa_firms_key_exists():
     """Test that NASA_FIRMS_API_KEY is set"""
     nasa_key = os.getenv('NASA_FIRMS_API_KEY')
     assert nasa_key is not None, "NASA_FIRMS_API_KEY not found in environment"
     assert nasa_key != 'your_nasa_firms_key_here', "NASA_FIRMS_API_KEY is still placeholder"
-    logger.info(f"✓ NASA_FIRMS_API_KEY found: {nasa_key[:8]}...")
+    logger.info(f" NASA_FIRMS_API_KEY found: {nasa_key[:8]}...")
 
-
-# ============================================================================
 # TEST: Weather API
-# ============================================================================
 
 def test_weather_api_connection():
     """Test Weather API connection with real request"""
@@ -78,8 +70,7 @@ def test_weather_api_connection():
     temp = data['main']['temp']
     humidity = data['main']['humidity']
     
-    logger.info(f"✓ Weather API working - Temp: {temp}°C, Humidity: {humidity}%")
-
+    logger.info(f" Weather API working - Temp: {temp}°C, Humidity: {humidity}%")
 
 def test_weather_api_invalid_key():
     """Test Weather API fails gracefully with invalid key"""
@@ -94,12 +85,9 @@ def test_weather_api_invalid_key():
     response = requests.get(url, timeout=10)
     
     assert response.status_code == 401, "Expected 401 for invalid API key"
-    logger.info("✓ Weather API correctly rejects invalid key")
+    logger.info(" Weather API correctly rejects invalid key")
 
-
-# ============================================================================
 # TEST: NASA FIRMS API
-# ============================================================================
 
 def test_nasa_firms_api_connection():
     """Test NASA FIRMS API connection"""
@@ -131,8 +119,7 @@ def test_nasa_firms_api_connection():
     assert 'longitude' in header.lower(), "NASA FIRMS response missing longitude column"
     
     fire_count = len(lines) - 1  # Subtract header
-    logger.info(f"✓ NASA FIRMS API working - Found {fire_count} fire detections in {country_code}")
-
+    logger.info(f" NASA FIRMS API working - Found {fire_count} fire detections in {country_code}")
 
 def test_nasa_firms_bbox_query():
     """Test NASA FIRMS API with bounding box query"""
@@ -157,8 +144,7 @@ def test_nasa_firms_bbox_query():
     lines = response.text.strip().split('\n')
     fire_count = max(0, len(lines) - 1)
     
-    logger.info(f"✓ NASA FIRMS BBox query working - Found {fire_count} fires in bbox")
-
+    logger.info(f" NASA FIRMS BBox query working - Found {fire_count} fires in bbox")
 
 def test_nasa_firms_invalid_key():
     """Test NASA FIRMS API fails gracefully with invalid key"""
@@ -175,8 +161,7 @@ def test_nasa_firms_invalid_key():
     
     # NASA FIRMS returns various error codes for invalid keys
     assert response.status_code != 200, "Expected error for invalid NASA FIRMS key"
-    logger.info(f"✓ NASA FIRMS correctly rejects invalid key (status: {response.status_code})")
-
+    logger.info(f" NASA FIRMS correctly rejects invalid key (status: {response.status_code})")
 
 def test_nasa_firms_data_fields():
     """Test that NASA FIRMS returns all required data fields"""
@@ -206,35 +191,30 @@ def test_nasa_firms_data_fields():
         for field in required_fields:
             assert field in header, f"NASA FIRMS response missing required field: {field}"
         
-        logger.info(f"✓ NASA FIRMS returns all required fields")
+        logger.info(f" NASA FIRMS returns all required fields")
     else:
-        logger.info("⚠️  No fires detected in test region (this is okay)")
+        logger.info("  No fires detected in test region (this is okay)")
 
-
-# ============================================================================
 # TEST: Google Earth Engine
-# ============================================================================
 
 def test_earth_engine_library():
     """Test that Earth Engine library is installed"""
     try:
         import ee
-        logger.info("✓ Earth Engine library installed")
+        logger.info(" Earth Engine library installed")
     except ImportError:
         raise Exception("Earth Engine library not installed - SKIPPED")
-
 
 def test_earth_engine_authentication():
     """Test Earth Engine authentication"""
     try:
         import ee
         ee.Initialize()
-        logger.info("✓ Earth Engine authenticated")
+        logger.info(" Earth Engine authenticated")
     except ImportError:
         raise Exception("Earth Engine library not installed - SKIPPED")
     except Exception as e:
         raise Exception(f"Earth Engine not authenticated - SKIPPED: {e}")
-
 
 def test_earth_engine_basic_query():
     """Test basic Earth Engine data query"""
@@ -252,7 +232,7 @@ def test_earth_engine_basic_query():
         assert isinstance(elevation, (int, float)), "Earth Engine elevation should be numeric"
         assert 0 < elevation < 9000, f"Unexpected elevation value: {elevation}"
         
-        logger.info(f"✓ Earth Engine query working - Elevation: {elevation}m")
+        logger.info(f" Earth Engine query working - Elevation: {elevation}m")
         
     except ImportError:
         raise Exception("Earth Engine library not installed - SKIPPED")
@@ -262,10 +242,7 @@ def test_earth_engine_basic_query():
         else:
             raise
 
-
-# ============================================================================
 # MAIN TEST RUNNER
-# ============================================================================
 
 if __name__ == "__main__":
     """Run tests directly"""
@@ -312,7 +289,7 @@ if __name__ == "__main__":
             
             try:
                 test_func()
-                print(f"  ✓ PASS: {test_name}")
+                print(f"   PASS: {test_name}")
                 passed_tests += 1
             except Exception as e:
                 error_msg = str(e)
@@ -321,7 +298,7 @@ if __name__ == "__main__":
                     print(f"         {error_msg}")
                     skipped_tests += 1
                 else:
-                    print(f"  ✗ FAIL: {test_name}")
+                    print(f"   FAIL: {test_name}")
                     print(f"         {error_msg}")
                     failed_tests += 1
     
@@ -330,13 +307,13 @@ if __name__ == "__main__":
     print("TEST SUMMARY")
     print("=" * 70)
     print(f"Total:     {total_tests}")
-    print(f"✓ Passed:  {passed_tests}")
-    print(f"✗ Failed:  {failed_tests}")
+    print(f" Passed:  {passed_tests}")
+    print(f" Failed:  {failed_tests}")
     print(f"⊘ Skipped: {skipped_tests}")
     
     if failed_tests == 0 and passed_tests > 0:
-        print("\n✅ All configured tests passed!")
+        print("\n All configured tests passed!")
     elif failed_tests > 0:
-        print(f"\n⚠️  {failed_tests} test(s) failed")
+        print(f"\n  {failed_tests} test(s) failed")
     
     print("=" * 70)
