@@ -112,12 +112,14 @@ class NASAFirmsAPI:
                 logger.info(f"Retrieved {len(fires)} active fires from NASA FIRMS")
                 return fires
             else:
-                logger.error(f"NASA FIRMS API error: {response.status_code} - {response.text}")
-                return self._get_mock_fires(region, bbox)
+                logger.error(
+                    f"NASA FIRMS API error: HTTP {response.status_code} — {response.text[:200]}"
+                )
+                return []
                 
         except Exception as e:
             logger.error(f"Error fetching NASA FIRMS data: {e}")
-            return self._get_mock_fires(region, bbox)
+            return []
     
     def get_fires_by_country(self, country_code: str, hours: int = 24) -> List[Dict]:
         """

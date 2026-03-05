@@ -1,0 +1,307 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles for Pixel OS Frost Blue Theme */
+:root {
+  /* Frost Blue Light Background */
+  --bg-dark: #e0f2fe;
+  --bg-dark-secondary: #bae6fd;
+  --bg-accent: #7dd3fc;
+  
+  /* Glass Surfaces - White/frost tinted */
+  --glass-surface: rgba(255, 255, 255, 0.7);
+  --glass-surface-hover: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(14, 165, 233, 0.3);
+  --glass-border-focus: rgba(14, 165, 233, 0.6);
+  
+  /* Frost/Ice Blue Accents */
+  --frost-white: #0c4a6e;
+  --frost-blue: #0284c7;
+  --frost-cyan: #0891b2;
+  --frost-glow: rgba(14, 165, 233, 0.2);
+  
+  /* Fire colors */
+  --fire-accent: #ea580c;
+  --fire-amber: #d97706;
+  --fire-red: #dc2626;
+  --fire-yellow: #ca8a04;
+  
+  /* Risk levels */
+  --risk-critical: #ef4444;
+  --risk-high: #f97316;
+  --risk-medium: #eab308;
+  --risk-low: #22c55e;
+  
+  /* Nature colors */
+  --vegetation: #16a34a;
+  --wind: #3b82f6;
+  --water: #2563eb;
+  
+  /* Text colors - Pure Black for light bg */
+  --text-primary: #000000;
+  --text-secondary: #000000;
+  --text-mono: #000000;
+  
+  /* Accent colors */
+  --accent-cyan: #0891b2;
+  --accent-blue: #0284c7;
+  --accent-purple: #9333ea;
+  --accent-pink: #db2777;
+  --accent-green: #16a34a;
+  --accent-orange: #ea580c;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg-dark);
+  color: #000000;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar - Frost blue theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-dark-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--frost-blue);
+}
+
+/* Glass utility classes */
+@layer utilities {
+  .glass {
+    background: var(--glass-surface);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 
+      0 4px 16px rgba(0, 0, 0, 0.1),
+      0 0 30px var(--frost-glow),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+  
+  .glass-heavy {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.15),
+      0 0 40px var(--frost-glow),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+  
+  .glass-hover:hover {
+    background: var(--glass-surface-hover);
+    border-color: var(--frost-blue);
+    box-shadow: 
+      0 6px 20px rgba(0, 0, 0, 0.15),
+      0 0 40px var(--frost-glow);
+  }
+  
+  .glass-focus:focus {
+    outline: none;
+    border-color: var(--frost-blue);
+    box-shadow: 
+      0 0 0 3px rgba(2, 132, 199, 0.2),
+      0 0 20px var(--frost-glow);
+  }
+  
+  .squircle {
+    border-radius: 20px;
+  }
+  
+  .text-mono {
+    font-family: 'SF Mono', 'JetBrains Mono', 'Menlo', monospace;
+  }
+  
+  /* Frost shimmer effect */
+  .frost-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .frost-shimmer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(2, 132, 199, 0.15),
+      transparent
+    );
+    animation: frost-shimmer 2.5s ease-in-out infinite;
+  }
+  
+  @keyframes frost-shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
+  
+  /* Ice crystal effect */
+  .ice-crystal {
+    position: relative;
+  }
+  
+  .ice-crystal::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(circle at 20% 30%, rgba(2, 132, 199, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(8, 145, 178, 0.06) 0%, transparent 50%);
+    pointer-events: none;
+    border-radius: inherit;
+  }
+  
+  /* Fire marker pulse */
+  .fire-marker {
+    position: relative;
+  }
+  
+  .fire-marker::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(249, 115, 22, 0.3);
+    animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  @keyframes pulse-ring {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    50% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+  }
+}
+
+/* Leaflet map overrides - Frost blue theme */
+.leaflet-container {
+  background: var(--bg-dark) !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
+}
+
+.leaflet-control-zoom {
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 20px var(--frost-glow) !important;
+}
+
+.leaflet-control-zoom a {
+  background: var(--glass-surface) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid var(--glass-border) !important;
+  color: var(--frost-white) !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: var(--glass-surface-hover) !important;
+  border-color: var(--frost-blue) !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: var(--bg-dark-secondary) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 16px !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px var(--frost-glow) !important;
+}
+
+.leaflet-popup-tip {
+  background: var(--bg-dark-secondary) !important;
+  border: 1px solid var(--glass-border) !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(10, 22, 40, 0.9) !important;
+  color: var(--frost-blue) !important;
+  font-size: 10px !important;
+}
+
+.leaflet-control-attribution a {
+  color: var(--frost-cyan) !important;
+}
+
+/* Frost Toggle Styles - Frost Blue */
+.frost-toggle-track {
+  background: linear-gradient(135deg, #1e3a5f, #0f2744);
+  border: 1px solid var(--glass-border);
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.4),
+    0 0 15px var(--frost-glow);
+}
+
+.frost-toggle-track.active {
+  background: linear-gradient(135deg, #7f1d1d, #991b1b, #b91c1c);
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(185, 28, 28, 0.5);
+}
+
+.frost-toggle-handle {
+  background: linear-gradient(180deg, #e0f2fe 0%, #7dd3fc 100%);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    0 0 15px var(--frost-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition: transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.frost-toggle-handle:hover {
+  box-shadow: 
+    0 6px 20px rgba(0, 0, 0, 0.4),
+    0 0 30px var(--frost-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Map style control */
+.map-style-control {
+  background: rgba(15, 39, 68, 0.95) !important;
+  border: 1px solid var(--glass-border) !important;
+}
+
+.map-style-control button {
+  color: var(--frost-white) !important;
+}
+
+.map-style-control button:hover {
+  background: var(--glass-surface-hover) !important;
+  border-color: var(--frost-blue) !important;
+}

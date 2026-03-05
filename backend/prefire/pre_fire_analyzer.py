@@ -115,8 +115,12 @@ class PreFireAnalyzer:
                 logger.debug(f"Prediction: {risk_data['risk_level']} ({risk_data['probability']:.2%})")
                 return risk_data
             else:
-                logger.warning("Using mock risk prediction (model not loaded)")
-                return self._get_mock_prediction(features)
+                logger.error("CatBoost model not loaded — cannot perform risk prediction.")
+                return {
+                    "error": "ML model not available. Please ensure the CatBoost model is present in the models directory.",
+                    "features": features,
+                    "model_used": False
+                }
                 
         except Exception as e:
             logger.error(f"Analysis failed for ({lat}, {lon}): {e}", exc_info=True)
@@ -162,13 +166,16 @@ class PreFireAnalyzer:
         """
         try:
             if not self.model_loaded:
-                logger.warning("Using mock risk prediction (model not loaded)")
-                return self._get_mock_prediction(features)
+                logger.error("CatBoost model not loaded — cannot perform risk prediction.")
+                return {
+                    "error": "ML model not available. Please ensure the CatBoost model is present in the models directory.",
+                    "model_used": False
+                }
             
             # Check feature count mismatch
             if self.model.expected_features and len(features) != len(self.model.expected_features):
-                logger.warning(f"Feature count mismatch: model expects {len(self.model.expected_features)} features, got {len(features)}. Using rule-based prediction.")
-                return self._get_mock_prediction(features)
+                logger.error(f"Feature count mismatch: model expects {len(self.model.expected_features)}, got {len(features)}.")
+                return {"error": f"Feature mismatch ({len(features)} vs {len(self.model.expected_features)} expected). Model may need retraining.", "model_used": False}
             
             X = pd.DataFrame([features])
             result = self.model.predict_with_risk_levels(X)
@@ -189,7 +196,7 @@ class PreFireAnalyzer:
             return {"error": str(e)}
         except Exception as e:
             logger.error(f"Prediction failed: {e}", exc_info=True)
-            return self._get_mock_prediction(features)
+            return {"error": str(e), "model_used": False}
 
     def _get_mock_prediction(self, features: Dict[str, Any]) -> Dict[str, Any]:
         """

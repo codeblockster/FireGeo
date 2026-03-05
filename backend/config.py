@@ -32,6 +32,9 @@ ENSEMBLE_MODELS = {
 XGBOOST_MODEL = PRE_FIRE_MODELS_DIR / "xgboost_enhanced_model.pkl"
 UNET_MODEL = SPREAD_MODELS_DIR / "unet_fire_spread.pth"
 
+# New Active Fire Spread CA Model
+ACTIVE_FIRE_CA_MODEL = POST_FIRE_MODELS_DIR / "models" / "rf_fire_risk_model.pkl"
+
 # Scripts directories (if they exist in backend)
 SCRIPTS_DIR = BACKEND_ROOT / "scripts"
 TRAINING_SCRIPTS_DIR = SCRIPTS_DIR / "training"
@@ -47,6 +50,16 @@ TESTS_DIR = PROJECT_ROOT / "tests"
 GOOGLE_EARTH_ENGINE_SERVICE_ACCOUNT = os.getenv('GOOGLE_EARTH_ENGINE_SERVICE_ACCOUNT')
 GOOGLE_EARTH_ENGINE_PRIVATE_KEY_PATH = os.getenv('GOOGLE_EARTH_ENGINE_PRIVATE_KEY_PATH')
 NASA_FIRMS_API_KEY = os.getenv('NASA_FIRMS_API_KEY')
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Strict Mode — When True, data APIs return None/[] on failure instead of
+# silently falling back to mock data. The UI will show a clear error message.
+# ─────────────────────────────────────────────────────────────────────────────
+STRICT_MODE = True
+DATA_FAIL_MSG = (
+    "Data source unavailable. Please check your API credentials and network "
+    "connectivity, then try again."
+)
 
 # Model Configuration
 DEFAULT_ENSEMBLE_WEIGHTS = {

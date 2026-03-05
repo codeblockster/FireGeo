@@ -2,7 +2,6 @@ import logging
 import numpy as np
 import pandas as pd
 from typing import Dict, Any, List
-import streamlit as st
 import os
 try:
     import ee
@@ -40,6 +39,17 @@ class FeatureEngineer:
 
             current = self.weather_api.fetch_current_weather(lat, lon)
             hist_data = self.weather_api.get_historical_weather(lat, lon, days_back=30)
+
+            # If Open-Meteo returned mock data (API failed), try GEE ERA5 as fallback
+            if hist_data.get('dates', []) == [] or all(t == 25.0 for t in hist_data.get('temp_mean', [25.0]*3)):
+                if EE_AVAILABLE and not self.gee_client.is_mock_mode:
+                    logger.info("Open-Meteo archive failed, attempting GEE ERA5 fallback for historical weather")
+                    gee_hist = self.gee_client.get_historical_weather_gee(lat, lon, days_back=30)
+                    if gee_hist is not None:
+                        hist_data = gee_hist
+                        logger.info("GEE ERA5 historical weather used successfully")
+                    else:
+                        logger.warning("GEE ERA5 fallback also failed, using mock historical data")
             
             # Helper to get lag values
             def get_lag(data_list, days_ago, default):
@@ -197,16 +207,16 @@ class FeatureEngineer:
                 features['veg_data_quality'] = 1.0  # 1 = good quality, 0 = poor
                 
             else:
-                # Fallback values if GEE is not available
-                features.update(self._get_mock_gee_features())
+                # GEE not available — satellite/terrain features unavailable
+                logger.error("GEE is in mock mode. Satellite and terrain feature extraction skipped.")
+                raise RuntimeError("Google Earth Engine is unavailable. Vegetation and terrain features cannot be fetched.")
             
             logger.info(f"Generated {len(features)} features for ({lat}, {lon})")
             return features
             
         except Exception as e:
-            logger.error(f"Error in feature engineering: {e}", exc_info=True)
-            logger.warning("Returning mock features due to error")
-            return self._get_mock_features()
+            logger.error(f"Feature engineering failed: {e}", exc_info=True)
+            return None  # Caller must handle None and show a proper error to the user
 
     def _get_mock_gee_features(self):
         """Mock GEE features when GEE is unavailable"""

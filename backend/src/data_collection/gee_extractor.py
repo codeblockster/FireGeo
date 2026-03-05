@@ -126,7 +126,7 @@ class GEEExtractor:
             return data
         except Exception as e:
             logger.error(f"Error fetching GEE data: {e}")
-            return self._get_mock_data(lat, lon)
+            return None
     
     def get_gridmet_drought(self, point: ee.Geometry.Point, date: str) -> float:
         """Get drought index from GRIDMET"""
@@ -790,7 +790,113 @@ class GEEExtractor:
             logger.error(f"Error getting fire locations from GEE: {e}")
             return []
 
-    def _get_mock_data(self, lat: float, lon: float) -> Dict:
+    def get_historical_weather_gee(self, lat, lon, days_back=30):
+        """Fetch historical weather via GEE ERA5-Land as fallback for Open-Meteo archive API."""
+        if self.mock_mode:
+            return None
+        try:
+            import numpy as np
+            point = ee.Geometry.Point([lon, lat])
+            end_date = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
+            start_date = (datetime.now() - timedelta(days=days_back + 2)).strftime('%Y-%m-%d')
+
+            era5 = ee.ImageCollection('ECMWF/ERA5_LAND/DAILY_AGGR') \
+                .filterDate(start_date, end_date).filterBounds(point)
+            n = era5.size().getInfo()
+            if n == 0:
+                logger.warning("ERA5 empty, trying GRIDMET")
+                return self._get_hist_from_gridmet(point, start_date, end_date)
+
+            images = era5.toList(n)
+            temps, hums, precips, w_speeds, w_dirs = [], [], [], [], []
+            w_us, w_vs, s_temps, s_moist, dates = [], [], [], [], []
+
+            for i in range(n):
+                img = ee.Image(images.get(i))
+                date_str = ee.Date(img.get('system:time_start')).format('YYYY-MM-dd').getInfo()
+                vals = img.reduceRegion(
+                    reducer=ee.Reducer.mean(), geometry=point, scale=11000
+                ).getInfo()
+                t2m = vals.get('temperature_2m')
+                dp2m = vals.get('dewpoint_temperature_2m')
+                u10 = float(vals.get('u_component_of_wind_10m') or 0.0)
+                v10 = float(vals.get('v_component_of_wind_10m') or 0.0)
+                tp = float(vals.get('total_precipitation_sum') or 0.0)
+                stl1 = vals.get('soil_temperature_level_1')
+                swvl1 = vals.get('volumetric_soil_water_layer_1')
+                temp_c = float(t2m - 273.15) if t2m else 25.0
+                if dp2m is not None:
+                    td_c = float(dp2m - 273.15)
+                    es_t = 6.112 * np.exp((17.67 * temp_c) / (temp_c + 243.5))
+                    es_td = 6.112 * np.exp((17.67 * td_c) / (td_c + 243.5))
+                    rh_pct = min(100.0, max(0.0, 100.0 * es_td / es_t))
+                else:
+                    rh_pct = 60.0
+                speed = float(np.sqrt(u10**2 + v10**2))
+                direction = float(np.degrees(np.arctan2(-u10, -v10)) % 360)
+                temps.append(temp_c); hums.append(rh_pct)
+                precips.append(tp * 1000.0); w_speeds.append(speed); w_dirs.append(direction)
+                w_us.append(u10); w_vs.append(v10)
+                s_temps.append(float(stl1 - 273.15) if stl1 else temp_c - 3.0)
+                s_moist.append(float(swvl1) if swvl1 else 0.3)
+                dates.append(date_str)
+
+            vpds = [max(0.0, 0.6108 * np.exp((17.27*t)/(t+237.3)) * (1 - h/100.0))
+                    for t, h in zip(temps, hums)]
+            logger.info(f"GEE ERA5 fallback: fetched {len(dates)} days of historical weather")
+            return {
+                'humidity': hums, 'precip': precips, 'vpd': vpds,
+                'temp_mean': temps, 'temp_min': [t-4.0 for t in temps],
+                'temp_max': [t+4.0 for t in temps], 'skin_temp': temps,
+                'soil_temp': s_temps, 'soil_moisture': s_moist,
+                'wind_speed': w_speeds, 'wind_direction': w_dirs,
+                'wind_u': w_us, 'wind_v': w_vs, 'dates': dates
+            }
+        except Exception as e:
+            logger.error(f"GEE ERA5 historical weather error: {e}")
+            return None
+
+    def _get_hist_from_gridmet(self, point, start_date, end_date):
+        """GRIDMET fallback for regions outside ERA5 coverage."""
+        try:
+            import numpy as np
+            gridmet = ee.ImageCollection('IDAHO_EPSCOR/GRIDMET') \
+                .filterDate(start_date, end_date).filterBounds(point)
+            n = gridmet.size().getInfo()
+            if n == 0:
+                return None
+            images = gridmet.toList(n)
+            temps, hums, precips, w_speeds, w_dirs, dates = [], [], [], [], [], []
+            for i in range(n):
+                img = ee.Image(images.get(i))
+                date_str = ee.Date(img.get('system:time_start')).format('YYYY-MM-dd').getInfo()
+                vals = img.reduceRegion(reducer=ee.Reducer.mean(), geometry=point, scale=4000).getInfo()
+                tmmn = float(vals.get('tmmn') or 288.15)
+                tmmx = float(vals.get('tmmx') or 303.15)
+                t_mean = (tmmn + tmmx) / 2.0 - 273.15
+                rh = float(vals.get('rmax') or 60.0)
+                pr = float(vals.get('pr') or 0.0)
+                vs = float(vals.get('vs') or 5.0)
+                th = float(vals.get('th') or 180.0)
+                temps.append(t_mean); hums.append(rh); precips.append(pr)
+                w_speeds.append(vs); w_dirs.append(th); dates.append(date_str)
+            vpds = [max(0.0, 0.6108*np.exp((17.27*t)/(t+237.3))*(1-h/100.0))
+                    for t, h in zip(temps, hums)]
+            w_us = [-s*np.sin(np.radians(d)) for s, d in zip(w_speeds, w_dirs)]
+            w_vs_list = [-s*np.cos(np.radians(d)) for s, d in zip(w_speeds, w_dirs)]
+            logger.info(f"GEE GRIDMET fallback: fetched {len(dates)} days")
+            return {
+                'humidity': hums, 'precip': precips, 'vpd': vpds,
+                'temp_mean': temps, 'temp_min': [t-4 for t in temps], 'temp_max': [t+4 for t in temps],
+                'skin_temp': temps, 'soil_temp': [t-3 for t in temps], 'soil_moisture': [0.3]*len(temps),
+                'wind_speed': w_speeds, 'wind_direction': w_dirs,
+                'wind_u': w_us, 'wind_v': w_vs_list, 'dates': dates
+            }
+        except Exception as e:
+            logger.error(f"GRIDMET fallback error: {e}")
+            return None
+
+    def _get_mock_data(self, lat: float, lon: float):
         """Return mock data when GEE is not available"""
         import random
         random.seed(int(lat * 1000 + lon * 1000))

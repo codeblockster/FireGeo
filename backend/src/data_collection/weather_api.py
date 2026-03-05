@@ -103,10 +103,10 @@ class WeatherDataFetcher:
             
         except requests.exceptions.RequestException as e:
             logger.error(f"HTTP error fetching current weather: {e}")
-            return self._get_mock_current()
+            return None
         except Exception as e:
             logger.error(f"Error fetching current weather: {e}")
-            return self._get_mock_current()
+            return None
 
     def get_historical_weather(self, lat: float, lon: float, days_back: int = 30) -> Dict:
         """
@@ -149,12 +149,8 @@ class WeatherDataFetcher:
                 'temperature_2m_max',
                 'relative_humidity_2m_mean',
                 'precipitation_sum',
-                'dew_point_2m_mean',
                 'wind_speed_10m_mean',
                 'wind_direction_10m_dominant',
-                'wind_u_component_10m_mean',
-                'wind_v_component_10m_mean',
-                'surface_temperature_mean',
                 'soil_temperature_0_to_7cm_mean',
                 'soil_moisture_0_to_7cm_mean'
             ],
@@ -175,13 +171,22 @@ class WeatherDataFetcher:
             precips = daily.get('precipitation_sum', [])
             wind_speeds = daily.get('wind_speed_10m_mean', [])
             wind_directions = daily.get('wind_direction_10m_dominant', [])
-            wind_u = daily.get('wind_u_component_10m_mean', [])
-            wind_v = daily.get('wind_v_component_10m_mean', [])
-            skin_temps = daily.get('surface_temperature_mean', [])
             soil_temps = daily.get('soil_temperature_0_to_7cm_mean', [])
             soil_moistures = daily.get('soil_moisture_0_to_7cm_mean', [])
             dates = daily.get('time', [])
             
+            # Calculate wind U/V components from speed and direction
+            wind_u = []
+            wind_v = []
+            for speed, direction in zip(wind_speeds, wind_directions):
+                if speed is not None and direction is not None:
+                    dir_rad = np.radians(float(direction))
+                    wind_u.append(-float(speed) * np.sin(dir_rad))
+                    wind_v.append(-float(speed) * np.cos(dir_rad))
+                else:
+                    wind_u.append(0.0)
+                    wind_v.append(0.0)
+
             # Calculate VPD for each day
             vpds = []
             for temp, hum in zip(temps_mean, hums):
@@ -210,13 +215,13 @@ class WeatherDataFetcher:
                 'temp_mean': safe_list(temps_mean, 25.0, n_days),
                 'temp_min': safe_list(temps_min, 15.0, n_days),
                 'temp_max': safe_list(temps_max, 30.0, n_days),
-                'skin_temp': safe_list(skin_temps, 25.0, n_days),
+                'skin_temp': safe_list(temps_mean, 25.0, n_days),  # Use air temp as proxy
                 'soil_temp': safe_list(soil_temps, 20.0, n_days),
                 'soil_moisture': safe_list(soil_moistures, 0.3, n_days),
                 'wind_speed': safe_list(wind_speeds, 10.0, n_days),
                 'wind_direction': safe_list(wind_directions, 180.0, n_days),
-                'wind_u': safe_list(wind_u, 0.0, n_days),
-                'wind_v': safe_list(wind_v, 0.0, n_days),
+                'wind_u': wind_u if wind_u else [0.0] * n_days,
+                'wind_v': wind_v if wind_v else [0.0] * n_days,
                 'dates': dates
             }
             
@@ -225,10 +230,11 @@ class WeatherDataFetcher:
             
         except requests.exceptions.RequestException as e:
             logger.error(f"HTTP error fetching historical weather: {e}")
-            return self._get_mock_historical(days_back)
+            return None
         except Exception as e:
             logger.error(f"Error fetching historical weather: {e}")
-            return self._get_mock_historical(days_back)
+            return None
+
 
     def calculate_vpd(self, temp_c: float, humidity_pct: float) -> float:
         """
@@ -311,7 +317,7 @@ class WeatherDataFetcher:
             
         except Exception as e:
             logger.error(f"Error fetching forecast: {e}")
-            return self._get_mock_forecast(days_ahead)
+            return None
 
     def _get_mock_current(self) -> Dict:
         """Mock current weather data for fallback"""
