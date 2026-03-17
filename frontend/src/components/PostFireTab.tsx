@@ -155,7 +155,7 @@ const PostFirePanel: React.FC = () => {
   const [spreadProgress, setSpreadProgress] = useState(0);
   const animationRef = useRef<number | null>(null);
 
-  // Use the post-fire spread simulation hook with fallback
+  // Use the post-fire spread simulation hook
   const spreadHook = useSimulateFireSpread();
   const simulateAtLocation = spreadHook?.simulateAtLocation || (() => Promise.reject(new Error('Hook not ready')));
   const isLoading = spreadHook?.isLoading || false;

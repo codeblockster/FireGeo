@@ -31,9 +31,9 @@ class NASAFirmsAPI:
     
     @property
     def is_mock_mode(self) -> bool:
-        """Check if running in mock mode"""
-        return getattr(self, 'mock_mode', False)
-
+        """Check if running in mock mode - always returns False now that mock mode is removed"""
+        return False
+    
     def __init__(self, api_key: str = None):
         """
         Initialize NASA FIRMS API client
@@ -45,21 +45,13 @@ class NASAFirmsAPI:
         self.base_url = "https://firms.modaps.eosdis.nasa.gov/api/area/csv"
         
         if not self.api_key or self.api_key == "your_nasa_firms_key_here":
-            logger.warning("NASA FIRMS API key not found or is default. Using MOCK DATA.")
+            logger.error("NASA FIRMS API key not found or is default. Real fire data is required.")
             print("\n" + "="*50)
-            print(" WARNING: NASA FIRMS API KEY NOT FOUND")
-            print(" SYSTEM IS RUNNING IN MOCK MODE (SIMULATED DATA)")
+            print(" ERROR: NASA FIRMS API KEY NOT FOUND")
+            print(" SYSTEM REQUIRES REAL API KEY TO FUNCTION")
             print(" To use real data, set NASA_FIRMS_API_KEY in .env file")
             print("="*50 + "\n")
-            logger.warning("Please set NASA_FIRMS_API_KEY in your .env file to get real fire data.")
-            self.mock_mode = True
-        else:
-            logger.info(f"NASA FIRMS API key found: {self.api_key[:4]}...{self.api_key[-4:]}")
-            print("\n" + "="*50)
-            print(f" SUCCESS: NASA FIRMS API KEY FOUND ({self.api_key[:4]}...)")
-            print(" SYSTEM IS RUNNING IN REAL API MODE")
-            print("="*50 + "\n")
-            self.mock_mode = False
+            raise RuntimeError("NASA FIRMS API key is required. Please set NASA_FIRMS_API_KEY in .env file.")
     
     @cached(cache=api_cache)
     def get_active_fires(self, 
@@ -79,8 +71,8 @@ class NASAFirmsAPI:
         Returns:
             List of fire dictionaries with lat, lon, confidence, brightness, etc.
         """
-        if self.mock_mode:
-            return self._get_mock_fires(region, bbox)
+        if self.api_key is None:
+            raise RuntimeError("NASA FIRMS API key is required. Please set NASA_FIRMS_API_KEY in .env file.")
         
         try:
             # Convert hours to days (NASA FIRMS API expects DAY_RANGE 1-10)
@@ -208,39 +200,6 @@ class NASAFirmsAPI:
             return float(confidence_str)
         except ValueError:
             return confidence_map.get(confidence_str.lower(), 50.0)
-    
-    def _get_mock_fires(self, region: str = None, bbox: tuple = None) -> List[Dict]:
-        """Return mock fire data for testing"""
-        import random
-        
-        # Determine center point
-        if bbox:
-            min_lon, min_lat, max_lon, max_lat = bbox
-            center_lat = (min_lat + max_lat) / 2
-            center_lon = (min_lon + max_lon) / 2
-        else:
-            # Default to Nepal region
-            center_lat, center_lon = 27.7, 85.3
-        
-        # Generate 3-5 mock fires
-        num_fires = random.randint(3, 5)
-        fires = []
-        
-        for i in range(num_fires):
-            fires.append({
-                'latitude': center_lat + random.uniform(-0.5, 0.5),
-                'longitude': center_lon + random.uniform(-0.5, 0.5),
-                'brightness': round(random.uniform(300, 400), 1),
-                'confidence': round(random.uniform(70, 100), 1),
-                'acq_date': datetime.now().strftime('%Y-%m-%d'),
-                'acq_time': datetime.now().strftime('%H%M'),
-                'satellite': 'Mock',
-                'instrument': 'VIIRS',
-                'frp': round(random.uniform(10, 100), 2)
-            })
-        
-        logger.info(f"Generated {len(fires)} mock fires")
-        return fires
 
 # Singleton instance
 _nasa_firms_api = None

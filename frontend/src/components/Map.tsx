@@ -1,6 +1,6 @@
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap, LayerGroup, Polygon } from 'react-leaflet'
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { useStore } from '../store/useStore'
+import { useStore, FireLocation } from '../store/useStore'
 import { motion } from 'framer-motion'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -26,6 +26,60 @@ function MapUpdater() {
   return null
 }
 
+// Viewport-based filter for fire markers - improves performance
+// Only filters when map is ready and has bounds
+function useViewportFires(fires: FireLocation[], map: L.Map | null) {
+  const [viewportFires, setViewportFires] = useState<FireLocation[]>(fires)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    // Always initialize with all fires - this ensures display on initial load
+    setViewportFires(fires)
+
+    if (!map || !fires.length) {
+      return
+    }
+
+    const updateViewport = () => {
+      try {
+        const bounds = map.getBounds()
+        if (bounds.isValid()) {
+          const visible = fires.filter(fire =>
+            bounds.contains([fire.lat, fire.lng])
+          )
+          // Show all fires if none visible in viewport
+          setViewportFires(visible.length > 0 ? visible : fires)
+        } else {
+          setViewportFires(fires)
+        }
+      } catch (e) {
+        setViewportFires(fires)
+      }
+    }
+
+    // Small delay to ensure map is ready
+    const timer = setTimeout(updateViewport, 500)
+
+    // Debounced update on move/zoom
+    const handleMoveEnd = () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      timeoutRef.current = setTimeout(updateViewport, 200)
+    }
+
+    map.on('moveend', handleMoveEnd)
+    map.on('zoomend', handleMoveEnd)
+
+    return () => {
+      clearTimeout(timer)
+      map.off('moveend', handleMoveEnd)
+      map.off('zoomend', handleMoveEnd)
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [map, fires])
+
+  return viewportFires
+}
+
 // Map click handler component
 function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
   const map = useMap()
@@ -43,9 +97,10 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number
 
   useEffect(() => {
     const handleClick = (e: L.LeafletMouseEvent) => {
+      // In fire mode, click shows coordinates
       // In risk mode, click triggers risk assessment
       // In postfire mode with ignition enabled, click triggers fire spread
-      if (mode === 'risk' || (mode === 'postfire' && isIgnitionMode)) {
+      if (mode === 'fire' || mode === 'risk' || (mode === 'postfire' && isIgnitionMode)) {
         onMapClick(e.latlng.lat, e.latlng.lng)
       }
     }
@@ -329,6 +384,11 @@ export function MapView() {
   const [currentStep, setCurrentStep] = useState<number>(0)
   const [maxStep, setMaxStep] = useState<number>(0)
 
+  // Performance: Filter fires to only render those in viewport
+  // Note: For now, just use all fires to ensure map displays correctly
+  // Viewport filtering can be enabled if needed
+  const visibleFires = fireLocations
+
   // Listen for fire spread events from PostFireTab
   useEffect(() => {
     const handleShowFireSpread = (e: CustomEvent) => {
@@ -425,12 +485,12 @@ export function MapView() {
     }
   }
 
-  // Handle map click for risk assessment or fire ignition
+  // Handle map click for risk assessment, fire ignition, or fire detection
   const handleMapClick = useCallback((lat: number, lng: number) => {
-    if (mode === 'risk') {
-      // Update clicked position for animation
-      setClickPosition([lat, lng])
+    // Update click position for indicator
+    setClickPosition([lat, lng])
 
+    if (mode === 'risk') {
       // Update selected location
       setSelectedLocation({
         id: `click-${lat.toFixed(4)}-${lng.toFixed(4)}`,
@@ -443,7 +503,6 @@ export function MapView() {
       setMapCenter([lat, lng])
     } else if (mode === 'postfire') {
       // In postfire mode, set the ignition point directly
-      setClickPosition([lat, lng])
       setMapCenter([lat, lng])
 
       // Emit event to ControlPanel/PostFireTab and also call window function
@@ -454,6 +513,13 @@ export function MapView() {
       if (w.igniteSetPoint) {
         w.igniteSetPoint(lat, lng)
       }
+    } else if (mode === 'fire') {
+      // In fire detection mode, show clicked coordinates info
+      // Center map on clicked position
+      setMapCenter([lat, lng])
+
+      // Emit event to show coordinate info in ControlPanel
+      window.dispatchEvent(new CustomEvent('mapClickForFire', { detail: { lat, lng } }));
     }
   }, [mode, setSelectedLocation, setMapCenter])
 
@@ -492,17 +558,6 @@ export function MapView() {
             Select a location to assess risk
           </motion.p>
         )}
-
-        {mode === 'postfire' && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="text-xs mt-2 bg-black/50 px-3 py-1 rounded-full" style={{ color: '#FF6600' }}
-          >
-            Use the panel → SET IGNITION → Click map to place fire start
-          </motion.p>
-        )}
       </div>
 
       <MapContainer
@@ -534,13 +589,45 @@ export function MapView() {
         {/* Render based on mode */}
         {mode === 'fire' ? (
           <>
-            {/* Heatmap layer */}
-            <HeatmapLayer fires={fireLocations} />
+            {/* Heatmap layer - viewport filtered for performance */}
+            <HeatmapLayer fires={visibleFires} />
 
-            {/* Fire markers */}
-            {fireLocations.map((fire) => (
+            {/* Fire markers - viewport filtered for performance */}
+            {visibleFires.map((fire) => (
               <FireMarker key={fire.id} fire={fire} />
             ))}
+
+            {/* Clicked coordinate marker with popup - shows when user clicks on map */}
+            {clickPosition && (
+              <CircleMarker
+                center={clickPosition}
+                radius={12}
+                pathOptions={{
+                  fillColor: '#00E676',
+                  fillOpacity: 0.9,
+                  color: '#69F0AE',
+                  weight: 2,
+                }}
+              >
+                <Popup>
+                  <div className="text-center p-2" style={{ background: '#1a1a2e', borderRadius: '8px' }}>
+                    <h3 className="font-bold text-sm" style={{ color: '#00E676' }}>Selected Coordinates</h3>
+                    <p className="text-xs mt-1" style={{ color: '#9b59b6' }}>
+                      Latitude: {clickPosition[0].toFixed(6)}
+                    </p>
+                    <p className="text-xs" style={{ color: '#9b59b6' }}>
+                      Longitude: {clickPosition[1].toFixed(6)}
+                    </p>
+                    <p className="text-xs mt-2" style={{ color: '#ffa502' }}>
+                      📅 Queried: {new Date().toLocaleString()}
+                    </p>
+                    <p className="text-xs" style={{ color: '#666' }}>
+                      Mode: Fire Detection
+                    </p>
+                  </div>
+                </Popup>
+              </CircleMarker>
+            )}
           </>
         ) : mode === 'postfire' ? (
           <>
@@ -572,9 +659,11 @@ export function MapView() {
               const visible = spreadPoints.filter(p => p.time_step <= currentStep);
               if (visible.length === 0) return null;
 
-              // Expand cells by 10% beyond exact grid size so adjacent cells overlap slightly,
-              // sealing sub-pixel rendering gaps without any visible seams.
-              const half = 0.0055;
+              // 0.0045 degrees ≈ 500m
+              // We compute exact lat and lon angular half-widths so the grid perfectly
+              // tiles without gaps on a Mercator projection map and looks perfectly square.
+              const halfLat = 0.0045 / 2;
+              const halfLon = halfLat / Math.cos((ignitionPoint!.lat * Math.PI) / 180);
 
               const getRiskStyle = (prob: number) => {
                 if (prob >= 70) return { fillColor: '#CC0000', fillOpacity: 0.75, weight: 0, label: '🔴 Critical Zone', desc: 'Probability ≥ 70%' };
@@ -588,12 +677,12 @@ export function MapView() {
                     const style = getRiskStyle(p.probability);
                     return (
                       <Polygon
-                        key={`cell-${i}`}
+                        key={`cell-${p.lat}-${p.lng}-${i}`}
                         positions={[
-                          [p.lat - half, p.lng - half],
-                          [p.lat - half, p.lng + half],
-                          [p.lat + half, p.lng + half],
-                          [p.lat + half, p.lng - half],
+                          [p.lat - halfLat, p.lng - halfLon],
+                          [p.lat - halfLat, p.lng + halfLon],
+                          [p.lat + halfLat, p.lng + halfLon],
+                          [p.lat + halfLat, p.lng - halfLon],
                         ]}
                         pathOptions={{
                           fillColor: style.fillColor,

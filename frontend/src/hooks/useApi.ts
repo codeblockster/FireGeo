@@ -247,7 +247,7 @@ export function useSimulateFireSpread() {
       wind_direction: windDirection,
       wind_speed: windSpeed,
       time_steps: timeSteps,
-      cell_size_deg: 0.01,
+      cell_size_deg: 0.0045,  // ~500m resolution
     })
   }
   

@@ -28,15 +28,14 @@ class GEEExtractor:
 
     @property
     def is_mock_mode(self) -> bool:
-        """Check if running in mock mode"""
-        return getattr(self, 'mock_mode', False)
+        """Check if running in mock mode - always returns False now that mock mode is removed"""
+        return False
 
     def __init__(self):
         """Initialize Google Earth Engine"""
         if not EE_AVAILABLE:
-            logger.warning("Earth Engine API not installed. Forcing Mock Mode.")
-            self.mock_mode = True
-            return
+            logger.error("Earth Engine API not installed. Real satellite data is required.")
+            raise RuntimeError("Google Earth Engine API is required but not installed. Please install: pip install earthengine-api")
 
         try:
             # Get project ID from environment
@@ -60,8 +59,6 @@ class GEEExtractor:
                 else:
                     ee.Initialize(credentials)
                     logger.info(" GEE initialized with service account (no project)")
-                
-                self.mock_mode = False
             else:
                 # User authentication (for local development)
                 logger.info("No service account found, using user authentication...")
@@ -79,13 +76,10 @@ class GEEExtractor:
                     except:
                         ee.Initialize()
                         logger.info(" GEE initialized without project")
-                
-                self.mock_mode = False
-                
+                        
         except Exception as e:
-            logger.warning(f"GEE initialization failed: {e}")
-            logger.warning("Falling back to MOCK DATA mode. Real satellite data will not be available.")
-            self.mock_mode = True
+            logger.error(f"GEE initialization failed: {e}")
+            raise RuntimeError(f"Google Earth Engine initialization failed: {str(e)}. Please check your credentials and configuration.")
 
     
     def get_environmental_data(self, lat: float, lon: float, date: str = None) -> Dict:
@@ -100,8 +94,11 @@ class GEEExtractor:
         Returns:
             Dictionary with 11 environmental features
         """
-        if self.mock_mode:
-            return self._get_mock_data(lat, lon)
+        if not EE_AVAILABLE:
+            raise RuntimeError("Google Earth Engine API is not available. Please install: pip install earthengine-api")
+        
+        if self._initialized is False:
+            raise RuntimeError("Google Earth Engine is not initialized. Please check your credentials.")
         
         if date is None:
             date = datetime.now().strftime('%Y-%m-%d')
@@ -652,9 +649,6 @@ class GEEExtractor:
         Returns:
             Tile URL format string
         """
-        if self.mock_mode:
-            return None
-            
         try:
             if date is None:
                 date = datetime.now().strftime('%Y-%m-%d')
@@ -690,9 +684,6 @@ class GEEExtractor:
         Returns:
             Number of active fires found
         """
-        if self.mock_mode:
-            return 0
-            
         try:
             if date is None:
                 date = datetime.now().strftime('%Y-%m-%d')
@@ -734,9 +725,6 @@ class GEEExtractor:
         Returns:
             List of dicts
         """
-        if self.mock_mode:
-            return []
-            
         try:
             if date is None:
                 date = datetime.now().strftime('%Y-%m-%d')
@@ -792,8 +780,6 @@ class GEEExtractor:
 
     def get_historical_weather_gee(self, lat, lon, days_back=30):
         """Fetch historical weather via GEE ERA5-Land as fallback for Open-Meteo archive API."""
-        if self.mock_mode:
-            return None
         try:
             import numpy as np
             point = ee.Geometry.Point([lon, lat])
@@ -895,25 +881,6 @@ class GEEExtractor:
         except Exception as e:
             logger.error(f"GRIDMET fallback error: {e}")
             return None
-
-    def _get_mock_data(self, lat: float, lon: float):
-        """Return mock data when GEE is not available"""
-        import random
-        random.seed(int(lat * 1000 + lon * 1000))
-        
-        return {
-            'drought': round(random.uniform(-4.0, 4.0), 2),
-            'elevation': round(random.uniform(100, 3000), 1),
-            'energy_release': round(random.uniform(0, 100), 2),
-            'humidity': round(random.uniform(20, 80), 1),
-            'temp_min': round(random.uniform(10, 25), 1),
-            'temp_max': round(random.uniform(25, 45), 1),
-            'population': round(random.uniform(0, 500), 1),
-            'precipitation': round(random.uniform(0, 50), 2),
-            'vegetation': round(random.uniform(0.2, 0.8), 3),
-            'wind_direction': round(random.uniform(0, 360), 1),
-            'wind_speed': round(random.uniform(5, 30), 1)
-        }
 
 # Singleton instance
 _gee_extractor = None

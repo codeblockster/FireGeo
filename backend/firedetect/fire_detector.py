@@ -22,8 +22,9 @@ class FireDetector:
         self.region_map = {
             "Whole World": ("world", [0, 0], 2),
             
-            # Nepal - Using proper 3-letter ISO country code
-            "Nepal": ("NPL", [28.3949, 84.1240], 7),
+            # Nepal - Using bounding box for reliable API queries
+            # (min_lon, min_lat, max_lon, max_lat) covers entire Nepal
+            "Nepal": ((80.0, 26.0, 88.0, 30.5), [28.3949, 84.1240], 7),
             
             # Other regions with bounding boxes
             "California": ((-124.5, 32.5, -114.1, 42.0), [36.7, -119.4], 6),

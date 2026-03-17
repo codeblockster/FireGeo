@@ -297,8 +297,7 @@ async def detect_fires(request: LocationRequest):
         
     except Exception as e:
         logger.error(f"Error detecting fires: {e}")
-        # Fallback to mock data if real detection fails
-        return _generate_mock_fires(location)
+        raise HTTPException(status_code=503, detail=f"Fire detection service unavailable: {str(e)}")
 
 
 @app.post("/api/env-data", response_model=EnvDataResponse)
@@ -360,8 +359,7 @@ async def get_env_data(request: LocationRequest):
         
     except Exception as e:
         logger.error(f"Error fetching env data: {e}")
-        # Fallback to mock data
-        return _generate_mock_env_data(location)
+        raise HTTPException(status_code=503, detail=f"Environmental data service unavailable: {str(e)}")
 
 
 @app.get("/api/weather")
@@ -483,8 +481,7 @@ async def assess_risk(request: AssessRiskRequest):
         
     except Exception as e:
         logger.error(f"Error assessing risk: {e}")
-        # Fallback to simple calculation
-        return _generate_mock_risk_assessment(location)
+        raise HTTPException(status_code=503, detail=f"Risk assessment service unavailable: {str(e)}")
 
 
 # ========================
@@ -611,76 +608,6 @@ def _calculate_risk_from_features(features: Dict) -> Dict:
         "features": features
     }
 
-def _generate_mock_fires(location: Location) -> DetectFiresResponse:
-    """Generate mock fire data for fallback"""
-    fires = []
-    for i in range(5):
-        lat_offset = random.uniform(-1.5, 1.5)
-        lng_offset = random.uniform(-1.5, 1.5)
-        fires.append(FireLocation(
-            id=f"fire-{i+1}",
-            lat=location.lat + lat_offset,
-            lng=location.lng + lng_offset,
-            intensity=random.randint(50, 100),
-            confidence=random.randint(70, 98),
-            timestamp=datetime.now().isoformat()
-        ))
-    
-    return DetectFiresResponse(
-        fires=fires,
-        count=len(fires),
-        source="Mock Data (API unavailable)",
-        timestamp=datetime.now().isoformat()
-    )
-
-def _generate_mock_env_data(location: Location) -> EnvDataResponse:
-    """Generate mock environmental data for fallback"""
-    return EnvDataResponse(
-        data=EnvironmentalData(
-            temperature=round(20 + random.uniform(-5, 15), 1),
-            humidity=random.randint(10, 60),
-            windSpeed=random.randint(5, 40),
-            windDirection=random.randint(0, 360),
-            vegetationIndex=round(random.uniform(0.2, 0.8), 2),
-            droughtIndex=round(random.uniform(0.3, 0.9), 2)
-        ),
-        timestamp=datetime.now().isoformat()
-    )
-
-def _generate_mock_risk_assessment(location: Location) -> AssessRiskResponse:
-    """Generate mock risk assessment for fallback"""
-    score = random.randint(20, 90)
-    
-    if score >= 80:
-        level = "critical"
-    elif score >= 60:
-        level = "high"
-    elif score >= 40:
-        level = "medium"
-    else:
-        level = "low"
-    
-    risk = RiskAssessment(
-        level=level,
-        score=score,
-        probability=score / 100,
-        alert_priority=level.capitalize(),
-        confidence="Mock",
-        factors=RiskFactors(
-            weather=random.randint(30, 80),
-            vegetation=random.randint(30, 80),
-            topography=random.randint(30, 80),
-            historical=random.randint(30, 80)
-        )
-    )
-    
-    return AssessRiskResponse(
-        risk=risk,
-        location=location,
-        features=None,
-        timestamp=datetime.now().isoformat()
-    )
-
 
 # ========================
 # Startup Event
@@ -728,7 +655,7 @@ class PostFireSpreadRequest(BaseModel):
     wind_direction: Optional[float] = 90.0
     wind_speed: Optional[float] = 15.0
     time_steps: Optional[int] = 5
-    cell_size_deg: Optional[float] = 0.005
+    cell_size_deg: Optional[float] = 0.0045  # ~500m resolution
 
 class SpreadPoint(BaseModel):
     latitude: float
@@ -823,11 +750,10 @@ async def post_fire_spread(request: PostFireSpreadRequest):
         
         # Run the cellular automata simulation
         try:
-            grid_state = ca.simulate_spread(
+            grid_state, cell_size_lat, cell_size_lon, origin_lat, origin_lon = ca.simulate_spread(
                 start_lat=fire_lat, 
                 start_lon=fire_lon, 
                 steps=steps, 
-                cell_size_deg=cell_size,
                 override_wind_dir=wind_direction,
                 override_wind_speed=wind_speed / 3.6  # Convert to m/s
             )
@@ -844,11 +770,19 @@ async def post_fire_spread(request: PostFireSpreadRequest):
                 t_val = grid_state[y, x]
                 if t_val > 0:
                     # Map time-step to decreasing probability (earlier = higher prob)
-                    # 1 -> 95%, 2 -> 75%, 3 -> 55%, etc.
-                    prob = max(15, 95 - (t_val - 1) * 20)
+                    # Map.tsx styles: >=70 (Critical), >=40 (High), else (Moderate)
+                    if t_val == 1:
+                        prob = 85
+                    elif t_val == 2:
+                        prob = 55
+                    elif t_val == 3:
+                        prob = 35
+                    else:
+                        prob = max(15, 35 - (t_val - 3) * 10)
                     
-                    cell_lat = fire_lat + (center - y) * cell_size
-                    cell_lon = fire_lon + (x - center) * cell_size
+                    # Use cell size from simulation (not from request) for accurate 0.1km x 0.1km grid
+                    cell_lat = fire_lat + (center - y) * cell_size_lat
+                    cell_lon = fire_lon + (x - center) * cell_size_lon
                     
                     spread_points.append(SpreadPoint(
                         latitude=round(cell_lat, 5),

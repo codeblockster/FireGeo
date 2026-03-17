@@ -40,8 +40,23 @@ class FeatureEngineer:
             current = self.weather_api.fetch_current_weather(lat, lon)
             hist_data = self.weather_api.get_historical_weather(lat, lon, days_back=30)
 
+            # Handle None responses from weather API
+            if current is None:
+                logger.warning("Weather API returned no current data, using defaults")
+                current = {
+                    'temp': 25.0, 'humidity': 50.0, 'dewpoint': 15.0,
+                    'cloud_cover': 20.0, 'wind_speed': 10.0, 'wind_direction': 180.0,
+                    'wind_u': 0.0, 'wind_v': 0.0, 'precip': 0.0,
+                    'skin_temp': 25.0, 'soil_temp': 20.0, 'soil_moisture': 0.3
+                }
+            
+            if hist_data is None:
+                logger.warning("Weather API returned no historical data, using defaults")
+                hist_data = {'dates': [], 'temp_mean': [], 'temp_min': [], 'temp_max': [], 
+                            'humidity': [], 'precipitation': [], 'vpd': [], 'soil_moisture': []}
+
             # If Open-Meteo returned mock data (API failed), try GEE ERA5 as fallback
-            if hist_data.get('dates', []) == [] or all(t == 25.0 for t in hist_data.get('temp_mean', [25.0]*3)):
+            elif hist_data.get('dates', []) == [] or all(t == 25.0 for t in hist_data.get('temp_mean', [25.0]*3)):
                 if EE_AVAILABLE and not self.gee_client.is_mock_mode:
                     logger.info("Open-Meteo archive failed, attempting GEE ERA5 fallback for historical weather")
                     gee_hist = self.gee_client.get_historical_weather_gee(lat, lon, days_back=30)
@@ -148,33 +163,45 @@ class FeatureEngineer:
             features['vapor_pressure_deficit_kpa_roll14_mean'] = get_rolling_mean(vpds, 14, 1.0)
 
             if EE_AVAILABLE and not self.gee_client.is_mock_mode:
-                point = ee.Geometry.Point([lon, lat])
-                
-                # TERRAIN METRICS
-                terrain = self.gee_client.get_terrain_metrics(point)
-                features['mtpi_min'] = terrain.get('mtpi_min', -10.0)
-                features['mtpi_mean'] = terrain.get('mtpi_mean', 0.0)
-                features['mtpi_max'] = terrain.get('mtpi_max', 10.0)
-                features['mtpi_stddev'] = terrain.get('mtpi_stddev', 5.0)
-                features['elevation_min_m'] = terrain.get('elevation_min', 0.0)
-                features['elevation_range_m'] = terrain.get('elevation_range', 500.0)
-                features['elevation_stddev_m'] = terrain.get('elevation_stddev', 100.0)
-                features['aspect_mean_deg'] = terrain.get('aspect_mean', 180.0)
-                features['aspect_stddev_deg'] = terrain.get('aspect_stddev', 45.0)
-                features['slope_min_deg'] = terrain.get('slope_min', 0.0)
-                features['slope_stddev_deg'] = terrain.get('slope_stddev', 5.0)
-                features['slope_max_deg'] = terrain.get('slope_max', 15.0)
-                
-                # LST
-                features['lst_day_c'] = self.gee_client.get_modis_lst(point, date)
-                features['lst_missing_flag'] = 0.0  # 0 = data available, 1 = missing
-                
-                # LANDSAT INDICES
-                landsat = self.gee_client.get_landsat_indices(point, date)
-                features['landsat_ndvi'] = landsat.get('landsat_ndvi', 0.5)
-                features['landsat_gndvi'] = landsat.get('landsat_gndvi', 0.5)
-                features['landsat_nbr'] = landsat.get('landsat_nbr', 0.3)
-                features['landsat_savi'] = self.gee_client.get_landsat_savi(point, date)
+                try:
+                    point = ee.Geometry.Point([lon, lat])
+                    
+                    # TERRAIN METRICS
+                    terrain = self.gee_client.get_terrain_metrics(point)
+                    if terrain is None:
+                        raise RuntimeError(
+                            f"GEE returned no terrain data for ({lat}, {lon}). "
+                            f"Please verify GEE authentication is configured."
+                        )
+                    features['mtpi_min'] = terrain.get('mtpi_min', -10.0)
+                    features['mtpi_mean'] = terrain.get('mtpi_mean', 0.0)
+                    features['mtpi_max'] = terrain.get('mtpi_max', 10.0)
+                    features['mtpi_stddev'] = terrain.get('mtpi_stddev', 5.0)
+                    features['elevation_min_m'] = terrain.get('elevation_min', 0.0)
+                    features['elevation_range_m'] = terrain.get('elevation_range', 500.0)
+                    features['elevation_stddev_m'] = terrain.get('elevation_stddev', 100.0)
+                    features['aspect_mean_deg'] = terrain.get('aspect_mean', 180.0)
+                    features['aspect_stddev_deg'] = terrain.get('aspect_stddev', 45.0)
+                    features['slope_min_deg'] = terrain.get('slope_min', 0.0)
+                    features['slope_stddev_deg'] = terrain.get('slope_stddev', 5.0)
+                    features['slope_max_deg'] = terrain.get('slope_max', 15.0)
+                    
+                    # LST
+                    features['lst_day_c'] = self.gee_client.get_modis_lst(point, date)
+                    features['lst_missing_flag'] = 0.0  # 0 = data available, 1 = missing
+                    
+                    # LANDSAT INDICES
+                    landsat = self.gee_client.get_landsat_indices(point, date)
+                    features['landsat_ndvi'] = landsat.get('landsat_ndvi', 0.5)
+                    features['landsat_gndvi'] = landsat.get('landsat_gndvi', 0.5)
+                    features['landsat_nbr'] = landsat.get('landsat_nbr', 0.3)
+                    features['landsat_savi'] = self.gee_client.get_landsat_savi(point, date)
+                except Exception as e:
+                    logger.error(f"GEE feature extraction failed: {e}")
+                    raise RuntimeError(
+                        f"Failed to fetch features from Google Earth Engine: {str(e)}. "
+                        f"Please verify GEE authentication is configured in .env file."
+                    )
                 
                 # For lags and rolling means, we'd need historical satellite data
                 # For now, use current values as approximation
