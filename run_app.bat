@@ -13,15 +13,27 @@ set "PROJECT_ROOT=!PROJECT_ROOT:~0,-1!"
 echo [1/5] Setting up Python environment...
 echo.
 
-REM First check for venv in local project folder, then F:\v4 cleanup
+REM First check for venv in project root, then common locations
 set "VENV_PATH="
 
 if exist "%PROJECT_ROOT%\venv_py311\Scripts\activate.bat" (
     set "VENV_PATH=%PROJECT_ROOT%\venv_py311"
     echo Found: %PROJECT_ROOT%\venv_py311
-) else if exist "F:\v4 cleanup\venv_py311\Scripts\activate.bat" (
-    set "VENV_PATH=F:\v4 cleanup\venv_py311"
-    echo Found: F:\v4 cleanup\venv_py311
+) else if exist "%PROJECT_ROOT%\..\venv_py311\Scripts\activate.bat" (
+    set "VENV_PATH=%PROJECT_ROOT%\..\venv_py311"
+    echo Found: %PROJECT_ROOT%\..\venv_py311
+) else if exist "D:\venv_py311\Scripts\activate.bat" (
+    set "VENV_PATH=D:\venv_py311"
+    echo Found: D:\venv_py311
+) else if exist "E:\venv_py311\Scripts\activate.bat" (
+    set "VENV_PATH=E:\venv_py311"
+    echo Found: E:\venv_py311
+) else if exist "F:\venv_py311\Scripts\activate.bat" (
+    set "VENV_PATH=F:\venv_py311"
+    echo Found: F:\venv_py311
+) else if exist "C:\Python311\venv\Scripts\activate.bat" (
+    set "VENV_PATH=C:\Python311\venv"
+    echo Found: C:\Python311\venv
 ) else (
     echo ERROR: venv_py311 not found!
     echo Please ensure the virtual environment exists.

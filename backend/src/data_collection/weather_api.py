@@ -31,6 +31,20 @@ class WeatherDataFetcher:
         self.api_key = api_key
         self.base_url = "https://api.open-meteo.com/v1"
         self.archive_url = "https://archive-api.open-meteo.com/v1/archive"
+        
+        from requests.adapters import HTTPAdapter
+        from urllib3.util.retry import Retry
+        self.session = requests.Session()
+        retry_strategy = Retry(
+            total=4,
+            backoff_factor=1.5,
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["GET"]
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
+        
         logger.info("Weather Data Fetcher initialized (using Open-Meteo)")
     
     def fetch_current_weather(self, lat: float, lon: float) -> Dict:
@@ -79,7 +93,7 @@ class WeatherDataFetcher:
         
         try:
             logger.debug(f"Fetching current weather for ({lat}, {lon})")
-            response = requests.get(endpoint, params=params, timeout=10)
+            response = self.session.get(endpoint, params=params, timeout=(10, 30))
             response.raise_for_status()
             data = response.json().get('current', {})
             
@@ -159,7 +173,7 @@ class WeatherDataFetcher:
         
         try:
             logger.debug(f"Fetching {days_back} days of historical weather for ({lat}, {lon})")
-            response = requests.get(self.archive_url, params=params, timeout=15)
+            response = self.session.get(self.archive_url, params=params, timeout=(10, 30))
             response.raise_for_status()
             daily = response.json().get('daily', {})
             
@@ -301,7 +315,7 @@ class WeatherDataFetcher:
         
         try:
             logger.debug(f"Fetching {days_ahead}-day forecast for ({lat}, {lon})")
-            response = requests.get(endpoint, params=params, timeout=10)
+            response = self.session.get(endpoint, params=params, timeout=(10, 30))
             response.raise_for_status()
             daily = response.json().get('daily', {})
             

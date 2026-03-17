@@ -87,7 +87,7 @@ function RiskGauge({ score, level }: { score: number; level: string }) {
 function RiskFactorBar({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-gray-300 w-20 truncate font-medium">{label}</span>
+      <span className="text-xs text-black w-20 truncate font-medium">{label}</span>
       <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden border border-gray-600">
         <motion.div
           initial={{ width: 0 }}
@@ -407,20 +407,12 @@ export function ControlPanel() {
 
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <span className="text-text-secondary">Radius</span>
-                <p className="font-bold">{spreadResult.spread_radius_km} km</p>
-              </div>
-              <div>
                 <span className="text-text-secondary">Probability</span>
                 <p className="font-bold text-red-400">{spreadResult.spread_probability}%</p>
               </div>
               <div>
                 <span className="text-text-secondary">Wind</span>
                 <p className="font-bold">{spreadResult.wind_direction} @ {spreadResult.wind_speed} km/h</p>
-              </div>
-              <div>
-                <span className="text-text-secondary">Data</span>
-                <p className="font-bold">{spreadResult.conditions.data_source}</p>
               </div>
             </div>
           </GlassCard>

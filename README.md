@@ -49,7 +49,7 @@ A comprehensive wildfire intelligence platform built with **React + TypeScript**
 |-----------|---------|
 | Model | RF + Extra Trees Ensemble (81 features) |
 | Grid | Moore Neighborhood (8 directions) |
-| Cell Size | Default 0.005° (~550m) |
+| Cell Size | Default 0.0045° (~500m) - High resolution |
 | Time Steps | Configurable (default: 5) |
 | Risk Threshold | High >0.75, Medium 0.50–0.75, Low <0.50 |
 | Data Source | Google Earth Engine (live) |
