@@ -1,241 +1,456 @@
-# Wildfire Management System 🔥
+# 🔥 FireGeo AI — Wildfire Detection & Risk Assessment System (v4)
 
-> A comprehensive system for wildfire risk assessment, detection, and spread prediction using machine learning and satellite data
+A comprehensive wildfire intelligence platform built with **React + TypeScript**, **FastAPI**, and **machine learning**. FireGeo integrates NASA FIRMS satellite data, Open-Meteo weather APIs, Google Earth Engine (GEE) environmental data, and AI-powered ensemble models for real-time fire detection, risk prediction, and post-fire spread simulation.
+
+![Version](https://img.shields.io/badge/version-4.0.0-red)
+![React](https://img.shields.io/badge/React-18-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115-blue)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)
+![Python](https://img.shields.io/badge/Python-3.11+-green)
+
+---
+
+## 📋 Table of Contents
+
+- [🌟 Features](#-features)
+- [🏗️ System Architecture](#️-system-architecture)
+- [🚀 Quick Start](#-quick-start)
+- [💻 Technology Stack](#-technology-stack)
+- [🔌 API Documentation](#-api-documentation)
+- [📁 Project Structure](#-project-structure)
+- [⚙️ Configuration](#️-configuration)
+- [🔧 Troubleshooting](#-troubleshooting)
+
+---
 
 ## 🌟 Features
 
-- **🔍 Active Fire Detection** - Real-time monitoring using NASA FIRMS satellite data (VIIRS/MODIS)
-- **⚠️ Pre-Fire Risk Assessment** - ML ensemble model (CatBoost, LightGBM, XGBoost) with 11 environmental features
-- **📊 Post-Fire Spread Prediction** - U-Net deep learning model for spatial fire spread forecasting
-- **🗺️ Interactive Dashboard** - Streamlit web interface with Folium maps
-- **🔌 REST API** - FastAPI backend with comprehensive endpoints
-- **🌍 Google Earth Engine Integration** - 11 environmental features from multiple satellite sources
+### 🔥 Active Fire Detection
+- **Real-time Detection** via NASA FIRMS satellite imagery (VIIRS SNPP, VIIRS NOAA20, MODIS NRT)
+- **Time Frame Selection**: 24h, 48h, 72h, or 7-day detection windows
+- **Fire Intensity & Confidence Scores** displayed on an interactive Leaflet map
+- **Global Regions**: World, Nepal, Australia, California, Indonesia, India
+
+### ⚠️ AI-Powered Pre-Fire Risk Assessment
+- **Ensemble ML Models**: CatBoost (primary), XGBoost, LightGBM trained on **81 environmental features**
+- **Risk Levels**: Critical (≥80), High (60–79), Medium (40–59), Low (<40)
+- **Feature Engineering**: Lag variables, rolling averages, 20+ derived features
+- **GEE Integration**: 11 live data sources — MODIS, SRTM, GRIDMET, VIIRS, GPWv4
+- **Click-to-Assess**: Click any point on the map to get instant risk predictions
+
+### 🌊 Post-Fire Spread Prediction (Cellular Automata)
+- **CA Simulation**: Simulates fire propagation outward from ignition point over configurable time steps
+- **RF Ensemble Integration**: Queries real-time GEE features per cell for spread probability
+- **Wind Bias**: Directional wind multipliers shape asymmetric spread patterns
+- **Risk Zones**: Visualized as merged polygons — Critical (red), High (orange), Moderate (yellow)
+- **Interactive Visualization**: Animated zone overlay rendered in React via Leaflet
+
+| Component | Details |
+|-----------|---------|
+| Model | RF + Extra Trees Ensemble (81 features) |
+| Grid | Moore Neighborhood (8 directions) |
+| Cell Size | Default 0.005° (~550m) |
+| Time Steps | Configurable (default: 5) |
+| Risk Threshold | High >0.75, Medium 0.50–0.75, Low <0.50 |
+| Data Source | Google Earth Engine (live) |
+
+**Wind Bias Formula:**
+```
+multiplier = 0.7 + (180 - angular_difference) / 180.0 * 0.5
+```
+- Frontal (with wind): 1.2× boost
+- Flanking (90° off wind): 1.0× neutral
+- Backing (against wind): 0.7× penalty
+
+### 🌤️ Environmental Monitoring
+- **Real-time Weather**: Temperature, humidity, wind speed/direction via Open-Meteo
+- **Vegetation Indices**: NDVI, GNDVI, SAVI, EVI, NBR, NDWI, NDSI
+- **Drought Monitoring**: Palmer Drought Severity Index (PDSI)
+- **Soil Conditions**: Soil temperature and moisture at multiple depths
+- **Historical Trends**: 14-day and 30-day analysis
+
+### 🗺️ Interactive Map
+- **Map Styles**: Dark Mode, Satellite View (Esri), Light Mode
+- **Border Toggle**: Country border layers on/off
+- **Predefined Regions**: Nepal (Kathmandu, Pokhara, Chitwan, Himalayan), Australia, California, Indonesia, India
+
+### 🎨 Modern UI
+- **Glass Morphism** with backdrop blur effects
+- **Smooth Animations** via Framer Motion
+- **Animated Risk Gauge**: Circular progress indicator
+- **Dark-first Design** with vibrant accent colors
+- **Responsive Layout** for all screen sizes
+
+---
+
+## 🏗️ System Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                   FRONTEND (React + TypeScript + Vite)           │
+│  ┌────────┐ ┌──────────────┐ ┌─────────────┐ ┌──────────────┐  │
+│  │ Navbar │ │ ControlPanel │ │  WeatherTab │ │ PostFireTab  │  │
+│  └────────┘ └──────────────┘ └─────────────┘ └──────────────┘  │
+│                      │                                           │
+│            ┌──────────────────────┐                             │
+│            │    Map.tsx (Leaflet) │                             │
+│            │  Fire/Risk/Spread    │                             │
+│            └──────────────────────┘                             │
+│                      │                                           │
+│         ┌────────────────────────┐                              │
+│         │    Zustand Store       │  React Query Hooks           │
+│         │  mode, location, data  │  useDetectFires()            │
+│         └────────────────────────┘  useAssessRisk()             │
+│                                     useEnvData()                 │
+└──────────────────────────┬───────────────────────────────────────┘
+                           │ HTTP (Vite Proxy → localhost:8000)
+┌──────────────────────────┴───────────────────────────────────────┐
+│                       BACKEND (FastAPI)                          │
+│  /api/detect-fires  /api/env-data  /api/assess-risk             │
+│  /api/weather       /api/post-fire-spread                        │
+│                                                                  │
+│  ┌─────────────┐  ┌──────────────────┐  ┌──────────────────┐   │
+│  │ FireDetector│  │ PreFireAnalyzer  │  │ ActiveFireCA     │   │
+│  │ (NASA FIRMS)│  │ (CatBoost/XGB/  │  │ (CA Simulation + │   │
+│  └─────────────┘  │  LightGBM)       │  │  RF Ensemble)    │   │
+│                   └──────────────────┘  └──────────────────┘   │
+│                                                                  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │               DATA COLLECTION LAYER                       │  │
+│  │  NASA FIRMS API  │  Open-Meteo API  │  Google Earth Engine│  │
+│  └───────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### Data Flow
+
+1. **Fire Detection**: `User → /api/detect-fires → NASA FIRMS → Map markers`
+2. **Risk Assessment**: `User clicks map → /api/assess-risk → GEE + CatBoost → Risk gauge`
+3. **Fire Spread**: `User sets ignition point → /api/post-fire-spread → CA simulation → Risk zone polygons`
+4. **Weather**: `Location selected → /api/weather + /api/env-data → Open-Meteo + GEE → WeatherTab`
+
+---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Python 3.8+
-- Google Earth Engine account (for environmental data)
-- NASA FIRMS API key (for fire detection)
+### Option 1: Windows Startup Script (Recommended)
 
-### Installation
+Double-click `run_app.bat` from the project root:
+
+```cmd
+run_app.bat
+```
+
+This will:
+- Start the FastAPI backend (`backend/main.py`) on port **8000**
+- Start the Vite frontend dev server on port **5173**
+
+See [`STARTUP.md`](STARTUP.md) for detailed startup instructions.
+
+### Option 2: Manual Setup
+
+#### Prerequisites
+
+| Requirement | Version |
+|-------------|---------|
+| Python | 3.11+ |
+| Node.js | 18+ |
+| NASA FIRMS API Key | Required (free) |
+| Google Earth Engine | Optional (recommended) |
+
+#### Backend
+
+```cmd
+cd backend
+..\venv_py311\Scripts\python.exe main.py
+```
+
+Or with your own venv:
 
 ```bash
-# 1. Clone the repository
-cd "f:\minor project wildfire management v3"
-
-# 2. Install dependencies
+cd backend
+python -m venv venv
+venv\Scripts\activate
 pip install -r requirements.txt
-
-# 3. Configure environment variables
-cp .env.example .env
-# Edit .env and add your API keys
+python main.py
 ```
 
-### Running the Application
-
-**Option 1: Manual Start (Recommended for Development)**
+#### Frontend
 
 ```bash
-# Terminal 1: Start Backend API
-python -m uvicorn api.backend.main:app --host 127.0.0.1 --port 8000
-
-# Terminal 2: Start Frontend Dashboard
-streamlit run frontend/app.py --server.port 8501
+cd frontend
+npm install
+npm run dev
 ```
 
-**Option 2: Docker Deployment**
+### Access
 
-```bash
-docker-compose up --build
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:8000 |
+| Swagger Docs | http://localhost:8000/docs |
+| Health Check | http://localhost:8000/health |
+
+---
+
+## 💻 Technology Stack
+
+### Frontend
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| React | 18 | UI Framework |
+| TypeScript | 5.3 | Type Safety |
+| Vite | 5 | Build Tool & Dev Server |
+| TailwindCSS | 3.4 | Styling |
+| Framer Motion | 11 | Animations |
+| React-Leaflet | 4 | Interactive Maps |
+| Zustand | 4 | State Management |
+| React Query | 5 | Data Fetching & Caching |
+| React Hot Toast | — | Notifications |
+
+### Backend
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| FastAPI | 0.115 | Web Framework |
+| Uvicorn | 0.32 | ASGI Server |
+| Pydantic | 2.x | Data Validation |
+| Python | 3.11+ | Runtime |
+
+### ML / Data Science
+
+| Technology | Purpose |
+|------------|---------|
+| CatBoost | Primary risk prediction model |
+| XGBoost | Ensemble model |
+| LightGBM | Fast gradient boosting |
+| Scikit-learn | RF/Extra Trees ensemble (post-fire CA) |
+| Pandas / NumPy | Data processing |
+
+### External APIs
+
+| API | Purpose |
+|-----|---------|
+| NASA FIRMS | Active fire satellite data |
+| Open-Meteo | Weather & climate data |
+| Google Earth Engine | Environmental satellite data |
+
+---
+
+## 🔌 API Documentation
+
+### Endpoints Overview
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | API info |
+| GET | `/health` | Health check |
+| POST | `/api/detect-fires` | Active fire detection |
+| POST | `/api/env-data` | Environmental/weather data |
+| GET | `/api/weather` | Standalone weather data |
+| POST | `/api/assess-risk` | AI risk assessment |
+| POST | `/api/post-fire-spread` | Fire spread simulation (CA) |
+
+---
+
+### `POST /api/detect-fires`
+
+```json
+// Request
+{
+  "location": { "id": "np", "name": "Nepal", "lat": 28.3949, "lng": 84.124 },
+  "hours": 24
+}
+
+// Response
+{
+  "fires": [
+    { "id": "fire-27.5-85.3", "lat": 27.5, "lng": 85.3, "intensity": 75,
+      "confidence": 85, "satellite": "VIIRS", "frp": 45.2, "brightness": 362.5 }
+  ],
+  "count": 1,
+  "source": "NASA FIRMS (VIIRS_SNPP_NRT)",
+  "timestamp": "2025-03-05T..."
+}
 ```
 
-**Access the Application:**
-- 🌐 **Dashboard**: http://localhost:8501
-- 🔌 **API Docs**: http://localhost:8000/docs
-- 📖 **ReDoc**: http://localhost:8000/redoc
+---
+
+### `POST /api/assess-risk`
+
+```json
+// Request
+{
+  "location": { "id": "np", "name": "Kathmandu Valley", "lat": 27.7172, "lng": 85.324 },
+  "envData": { "temperature": 25, "humidity": 35, "windSpeed": 15, "windDirection": 180 }
+}
+
+// Response
+{
+  "risk": {
+    "level": "high", "score": 72, "probability": 0.72,
+    "factors": { "weather": 65, "vegetation": 50, "topography": 55, "historical": 72 }
+  },
+  "timestamp": "2025-03-05T..."
+}
+```
+
+---
+
+### `POST /api/post-fire-spread`
+
+```json
+// Request
+{
+  "latitude": 27.7172,
+  "longitude": 85.324,
+  "wind_direction": 90,
+  "wind_speed": 15,
+  "time_steps": 5,
+  "cell_size_deg": 0.005
+}
+
+// Response
+{
+  "ignition_point": { "latitude": 27.7172, "longitude": 85.324 },
+  "spread_points": [
+    { "latitude": 27.7227, "longitude": 85.329, "probability": 95, "time_step": 1 }
+  ],
+  "spread_radius_km": 12.5,
+  "spread_probability": 78.5,
+  "model_info": {
+    "model_type": "ActiveFireCA (Cellular Automata + RF/ET Ensemble)",
+    "features": "81 environmental features from GEE",
+    "spread_logic": "Moore Neighborhood (8-direction)"
+  },
+  "timestamp": "2025-03-05T..."
+}
+```
+
+---
+
+### `GET /api/weather?lat=28.39&lon=84.12`
+
+```json
+{
+  "data": {
+    "temp": 18.5, "humidity": 45, "windSpeed": 12, "windDirection": 180,
+    "dewpoint": 6.2, "pressure": 1013.25, "precipitation": 0.0,
+    "soilTemp": 15.3, "soilMoisture": 0.28
+  },
+  "timestamp": "2025-03-05T..."
+}
+```
+
+---
 
 ## 📁 Project Structure
 
 ```
-f:\minor project wildfire management v3\
-├── api/                          # FastAPI Backend
-│   ├── backend/
-│   │   └── main.py              # Server entry point
-│   └── routes/
-│       └── predictions.py       # API endpoints
-├── src/                          # Application Source Code
-│   ├── analysis/                # Analysis modules
-│   │   ├── pre_fire.py         # Pre-fire risk assessment
-│   │   ├── post_fire.py        # Post-fire burn severity (dNBR)
-│   │   └── spread_prediction.py # Fire spread forecasting
-│   ├── data_collection/         # Data collection modules
-│   │   ├── gee_extractor.py    # Google Earth Engine integration
-│   │   └── nasa_firms.py       # NASA FIRMS fire data
-│   ├── models/                  # Model classes
-│   │   ├── pre_fire/
-│   │   │   └── ensemble_model.py # Ensemble ML model
-│   │   └── unet_fire.py        # U-Net architecture
-│   ├── preprocessing/
-│   ├── training/
-│   └── utils/
-├── data/                         # Data Storage (NEW)
-│   ├── models/                  # Trained model files
-│   │   ├── pre_fire/           # Ensemble models
-│   │   ├── post_fire/          # dNBR models
-│   │   └── spread/             # U-Net models
-│   ├── raw/                    # Raw satellite data
-│   ├── processed/              # Processed datasets
-│   └── training/               # Training datasets
-├── scripts/                      # Utility Scripts (NEW)
-│   ├── training/               # Model training scripts
-│   ├── data_collection/        # Data collection scripts
-│   └── analysis/               # Analysis scripts
-├── frontend/                     # Streamlit Dashboard
-│   └── app.py                  # Main dashboard application
-├── tests/                        # Test Suite
-├── config.py                     # Central Configuration (NEW)
-├── requirements.txt             # Python dependencies
-├── .env.example                 # Environment template
-└── README.md                    # This file
+v4 cleanup/
+├── frontend/                         # React + TypeScript + Vite
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Map.tsx              # Leaflet map with fire/risk/spread layers
+│   │   │   ├── ControlPanel.tsx     # Main panel (location, mode, fire/risk controls)
+│   │   │   ├── Navbar.tsx           # Top navigation bar
+│   │   │   ├── WeatherTab.tsx       # Weather & environmental data
+│   │   │   ├── PostFireTab.tsx      # Post-fire spread simulation UI
+│   │   │   └── ui/
+│   │   │       └── GlassCard.tsx    # Reusable glass-morphism card
+│   │   ├── hooks/
+│   │   │   └── useApi.ts            # React Query hooks for all API calls
+│   │   ├── store/
+│   │   │   └── useStore.ts          # Zustand global state store
+│   │   ├── App.tsx                  # Root app component
+│   │   ├── main.tsx                 # Entry point
+│   │   └── index.css                # Global styles (Tailwind + custom)
+│   ├── public/
+│   │   ├── fire-icon.svg
+│   │   └── fire-icon.png
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── tailwind.config.js
+│   └── tsconfig.json
+│
+├── backend/                          # FastAPI Backend
+│   ├── main.py                      # All API endpoints
+│   ├── config.py                    # Paths & configuration constants
+│   ├── requirements.txt
+│   ├── firedetect/
+│   │   └── fire_detector.py         # NASA FIRMS integration
+│   ├── prefire/
+│   │   ├── pre_fire_analyzer.py     # CatBoost risk analysis pipeline
+│   │   ├── catboost_predictor.py    # CatBoost model wrapper
+│   │   ├── feature_engineer.py      # Feature engineering (81 features)
+│   │   ├── calculations.py          # Risk score calculations
+│   │   └── models/                  # Trained ML models (.pkl, .json)
+│   ├── postfire/
+│   │   ├── data_collector.py        # GEE data collection for CA
+│   │   ├── models/
+│   │   │   └── active_fire_ca.py    # Cellular Automata + RF spread model
+│   │   └── ...
+│   └── src/
+│       └── data_collection/
+│           ├── nasa_firms.py        # NASA FIRMS API
+│           ├── weather_api.py       # Open-Meteo API
+│           ├── gee_extractor.py     # Google Earth Engine extraction
+│           └── sentinel_manager.py  # Sentinel satellite data
+│
+├── STARTUP.md                        # Detailed startup guide
+├── run_app.bat                       # Windows one-click launcher
+├── requirements.txt                  # Root Python dependencies
+├── model_features.txt                # 81 ML feature documentation
+├── authenticate_gee.py               # GEE authentication helper
+└── .env                              # Environment variables (not committed)
 ```
-
-## 🔧 Configuration
-
-### Central Configuration (`config.py`)
-All paths and settings are managed through the central `config.py` file:
-- Automatic path resolution relative to project root
-- Model directory paths
-- API configuration
-- Environment variables
-
-### Environment Variables (`.env`)
-```env
-# Google Earth Engine
-GOOGLE_EARTH_ENGINE_SERVICE_ACCOUNT=your_service_account
-GOOGLE_EARTH_ENGINE_PRIVATE_KEY_PATH=path/to/key.json
-
-# NASA FIRMS
-NASA_FIRMS_API_KEY=your_api_key
-```
-
-## 📡 API Endpoints
-
-### Health Check
-- `GET /api/health` - Server health status
-
-### Environmental Data
-- `GET /predictions/environmental` - Get 11 environmental features from GEE
-
-### Pre-Fire Risk Assessment
-- `POST /predictions/pre-fire/risk-map` - Generate risk map with ensemble model
-- `POST /predictions/predict` - Simple risk prediction
-
-### Active Fire Detection
-- `GET /predictions/fires/active` - Get active fires from NASA FIRMS
-
-### Post-Fire Analysis
-- `POST /predictions/post-fire/assessment` - Burn severity analysis (dNBR)
-
-### Fire Spread Prediction
-- `POST /predictions/spread/next-day` - Predict fire spread using U-Net
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-pytest
-
-# Test specific endpoints
-python test_integration.py
-python test_all_endpoints.py
-```
-
-## 📊 Environmental Features
-
-The system uses 11 environmental features from multiple satellite sources:
-
-1. **Temperature** (Max/Min) - GRIDMET
-2. **Humidity** - GRIDMET
-3. **Wind Speed** - GRIDMET
-4. **Wind Direction** - GRIDMET
-5. **Precipitation** - GRIDMET
-6. **Vegetation (NDVI)** - MODIS
-7. **Elevation** - SRTM
-8. **Drought Index (PDSI)** - GRIDMET
-9. **Energy Release Component** - GRIDMET
-10. **Population Density** - GPWv4
-
-## 🤖 Machine Learning Models
-
-### Pre-Fire Risk Assessment
-- **Ensemble Model**: Weighted combination of CatBoost (50%), LightGBM (30%), XGBoost (20%)
-- **Features**: 11 environmental parameters
-- **Output**: Risk score (0-1) and risk level (Low/Medium/High)
-
-### Fire Spread Prediction
-- **Architecture**: U-Net with PyTorch
-- **Input**: 12-channel spatial data (128x128)
-- **Output**: Predicted fire spread polygon
-
-## 🐳 Docker Deployment
-
-```bash
-# Build and start services
-docker-compose up --build
-
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
-
-# Rebuild from scratch
-docker-compose build --no-cache
-```
-
-## 📚 Documentation
-
-- **API Documentation**: http://localhost:8000/docs (Swagger UI)
-- **Alternative Docs**: http://localhost:8000/redoc
-- **Google Earth Engine Setup**: See `GUIDE_GEE_AUTH.md`
-
-## 🔍 Troubleshooting
-
-### Models Not Loading
-- System runs in MOCK mode when models are not present
-- To enable full ML mode, place trained models in `data/models/pre_fire/`:
-  - `catboost_s_tier_model.pkl`
-  - `lightgbm_best_model.pkl`
-  - `xgboost_enhanced_model.joblib`
-
-### Import Errors
-```bash
-# Reinstall dependencies
-pip install -r requirements.txt --force-reinstall
-```
-
-### Port Already in Use
-```bash
-# Change ports in commands:
-# Backend: --port 8001
-# Frontend: --server.port 8502
-```
-
-## 🤝 Contributing
-
-1. Train models using scripts in `scripts/training/`
-2. Add new features to `src/`
-3. Update tests in `tests/`
-4. Run `pytest` to verify
-5. Submit improvements
-
-## 📄 License
-
-This project is for educational and research purposes.
 
 ---
 
-**Built with:** Python • FastAPI • Streamlit • PyTorch • Scikit-learn • Google Earth Engine • NASA FIRMS
+## ⚙️ Configuration
 
-**Status**: ✅ Backend Running | ✅ Frontend Running | ⚠️ Models in MOCK mode
+### Environment Variables (`.env`)
+
+```env
+# NASA FIRMS API
+NASA_FIRMS_API_KEY=your_api_key_here
+
+# Google Earth Engine (optional, but recommended)
+GEE_PROJECT=your_gee_project_id
+GEE_SERVICE_ACCOUNT=your_service_account@project.iam.gserviceaccount.com
+GEE_KEY_FILE=path/to/service_account_key.json
+```
+
+### Key Config (`backend/config.py`)
+
+- `MODEL_DIR`: Path to trained ML model files
+- `CATBOOST_MODEL_PATH`: Primary CatBoost model
+- `RF_MODEL_PATH`: RF ensemble model for post-fire spread
+- `NASA_FIRMS_BASE_URL`: FIRMS API base URL
+
+### GEE Authentication
+
+```bash
+python authenticate_gee.py
+```
+
+---
+
+## 🔧 Troubleshooting
+
+| Issue | Fix |
+|-------|-----|
+| Backend won't start | Check Python 3.11+ is installed; ensure `backend/requirements.txt` deps are installed |
+| GEE errors | Run `python authenticate_gee.py`; verify project/service account credentials |
+| Fire data not loading | Verify `NASA_FIRMS_API_KEY` in `.env` is valid |
+| CORS errors | Ensure backend is running on port 8000 and frontend proxy in `vite.config.ts` is configured |
+| `ModuleNotFoundError` | Activate virtual environment and run `pip install -r requirements.txt` |
+| Fire spread returns no data | GEE must be authenticated; check `backend/config.py` model paths |
+
+---
+
+## 📄 License
+
+MIT License. See `LICENSE` for details.
